@@ -1,0 +1,164 @@
+#!/usr/bin/perl -w
+
+use POSIX ();
+use Proc::Daemon;
+
+use IO::Socket::INET;
+use Time::HiRes;
+
+
+################################################################################
+# Globals
+################################################################################
+
+$DAEMON     = 1;
+$PID_FILE   = "/var/run/xrootd/hdfs-mon-snatcher.pid";
+
+$PORT       = 2021;
+
+$LOG_FILE   = "/var/log/xrootd/hdfs-mon-snatcher.log";
+$LOG_LEVEL  = 9;
+
+
+################################################################################
+# Logging
+################################################################################
+
+sub open_log_file
+{
+  close LOG if defined(LOG) and *LOG ne *STDOUT;
+  if ($LOG_FILE eq '-')
+  {
+    *LOG = *STDOUT;
+  }
+  else
+  {
+    open  LOG, ">> $LOG_FILE" or die "Can not open logfile '$LOG_FILE'.";
+  }
+}
+
+sub print_log($@)
+{
+  my ($l, @a) = @_;
+
+  if ($LOG_LEVEL >= $l)
+  {
+    my $now = localtime();
+    $now =~ s/^\S+\s((\S+\s+){3}).*$/$1/o;
+    print LOG $now, @a;
+  }
+}
+
+sub put_log($@)
+{
+  my ($l, @a) = @_;
+
+  if ($LOG_LEVEL >= $l)
+  {
+    print LOG ' ' x 16, @a;
+  }
+}
+
+
+################################################################################
+# Signal handlers
+################################################################################
+
+my $sig_hup_received  = 0;
+my $sig_term_received = 0;
+
+sub sig_moo_handler
+{
+  my $sig = shift;
+
+  if ($sig eq 'HUP')
+  {
+    print_log 0, "SigHUP received ...\n"; LOG->flush();
+    $sig_hup_received = 1;
+  }
+  elsif ($sig eq 'CHLD')
+  {
+    print_log 0, "SigCHLD received.\n"; LOG->flush();
+  }
+}
+
+sub sig_term_handler
+{
+  print_log 0, "SigTERM received ... presumably exiting.\n"; LOG->flush();
+  $sig_term_received = 1;
+}
+
+
+################################################################################
+# main()
+################################################################################
+
+open_log_file();
+
+print_log 0, "$0 starting up.\n";
+
+if ($DAEMON)
+{
+  my $pid = Proc::Daemon::Init({
+    work_dir      => "/",                      # This is default, too.
+    dont_close_fh => ['ApMon::Common::SOCKET'] # Bummer, ApMon has static socket init!
+  });
+
+  if ($pid)
+  {
+    open  PF, ">$PID_FILE" or die "Can not open pid file, dying";
+    print PF $pid, "\n";
+    close PF;
+    exit 0;
+  }
+  else
+  {
+    print "Yow, i R the daemon, we guess\n";
+    # Reopen log for the new process.
+    open_log_file();
+    print_log 0, "$0 starting.\n";
+    print_log 0, "Redirecting stdout and stderr into this file.\n";
+    *STDOUT = *LOG;
+    *STDERR = *LOG;
+  }
+}
+
+
+# Install sig handlers now
+
+my $sigact1 = POSIX::SigAction->new(\&sig_moo_handler, POSIX::SigSet->new());
+POSIX::sigaction(&POSIX::SIGHUP,  $sigact1);
+POSIX::sigaction(&POSIX::SIGCHLD, $sigact1);
+
+my $sigact2 = POSIX::SigAction->new(\&sig_term_handler, POSIX::SigSet->new());
+POSIX::sigaction(&POSIX::SIGTERM, $sigact2);
+
+print_log 0, "Installed signal handlers.\n";
+
+
+# Actuall get to work ...
+
+my $socket = new IO::Socket::INET(LocalPort => $PORT, Proto => 'udp')
+    or print_log 0, "ERROR in Socket Creation: $!\n", exit 1;
+
+while (not $sig_term_received)
+{
+  if ($sig_hup_received)
+  {
+    print_log 0, "Processing SigHUP: reopening log file.\n";
+    open_log_file();
+    print_log 0, "Processing SigHUP: log file reopened.\n";
+
+    $sig_hup_received = 0;
+  }
+
+
+  my $raw_data;
+  next unless defined $socket->recv($raw_data, 65536);
+
+  my $peer = gethostbyaddr($socket->peeraddr(), AF_INET);
+
+  $peer =~ s/\.ucsd.edu$//o;
+
+  print_log 0, "$peer: ", $raw_data, "\n";
+}

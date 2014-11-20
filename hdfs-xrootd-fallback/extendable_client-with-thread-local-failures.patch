@@ -1,0 +1,173 @@
+diff -ru orig/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DFSClient.java new/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DFSClient.java
+--- orig/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DFSClient.java	2013-08-28 15:17:54.374568656 -0700
++++ new/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DFSClient.java	2013-08-28 15:17:54.809532779 -0700
+@@ -504,7 +504,7 @@
+     return dfsClientConf.connectToDnViaHostname;
+   }
+ 
+-  void checkOpen() throws IOException {
++  public void checkOpen() throws IOException {
+     if (!clientRunning) {
+       IOException result = new IOException("Filesystem closed");
+       throw result;
+@@ -2077,4 +2077,12 @@
+   void disableShortCircuit() {
+     shortCircuitLocalReads = false;
+   }
++  
++  public Configuration getConfig() {
++    return conf;
++  }
++  
++  public FileSystem.Statistics getStats() {
++    return stats;
++  }
+ }
+diff -ru orig/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DFSInputStream.java new/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DFSInputStream.java
+--- orig/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DFSInputStream.java	2013-08-28 15:17:54.509557523 -0700
++++ new/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DFSInputStream.java	2013-08-28 15:17:54.907524697 -0700
+@@ -62,10 +62,11 @@
+ public class DFSInputStream extends FSInputStream implements ByteBufferReadable {
+   private final SocketCache socketCache;
+ 
+-  private final DFSClient dfsClient;
+-  private boolean closed = false;
++  protected final DFSClient dfsClient;
++  protected boolean closed = false;
++
++  protected final String src;
+ 
+-  private final String src;
+   private final long prefetchSize;
+   private BlockReader blockReader = null;
+   private final boolean verifyChecksum;
+@@ -87,7 +88,14 @@
+    * back to the namenode to get a new list of block locations, and is
+    * capped at maxBlockAcquireFailures
+    */
+-  private int failures = 0;
++  private ThreadLocal<Integer> failures = new ThreadLocal<Integer>()
++  { @Override protected Integer initialValue() { return new Integer(0); } };
++
++  protected int  getFailures()        { return failures.get().intValue(); }
++  protected void setFailures(int val) { failures.set(new Integer(val)); }
++  protected void resetFailures()      { setFailures(0); }
++  protected void incFailures()        { setFailures(getFailures() + 1); }
++
+   private final int timeWindow;
+ 
+   /* XXX Use of CocurrentHashMap is temp fix. Need to fix 
+@@ -104,7 +112,7 @@
+     deadNodes.put(dnInfo, dnInfo);
+   }
+   
+-  DFSInputStream(DFSClient dfsClient, String src, int buffersize, boolean verifyChecksum
++  public DFSInputStream(DFSClient dfsClient, String src, int buffersize, boolean verifyChecksum
+                  ) throws IOException, UnresolvedLinkException {
+     this.dfsClient = dfsClient;
+     this.verifyChecksum = verifyChecksum;
+@@ -346,7 +354,7 @@
+    * @return consequent segment of located blocks
+    * @throws IOException
+    */
+-  private synchronized List<LocatedBlock> getBlockRange(long offset, 
++  protected synchronized List<LocatedBlock> getBlockRange(long offset, 
+                                                         long length) 
+                                                       throws IOException {
+     // getFileLength(): returns total file length
+@@ -634,7 +642,7 @@
+     }
+     Map<ExtendedBlock,Set<DatanodeInfo>> corruptedBlockMap 
+       = new HashMap<ExtendedBlock, Set<DatanodeInfo>>();
+-    failures = 0;
++    resetFailures();
+     if (pos < getFileLength()) {
+       int retries = 2;
+       while (retries > 0) {
+@@ -730,7 +738,7 @@
+         return new DNAddrPair(chosenNode, targetAddr);
+       } catch (IOException ie) {
+         String blockInfo = block.getBlock() + " file=" + src;
+-        if (failures >= dfsClient.getMaxBlockAcquireFailures()) {
++        if (getFailures() >= dfsClient.getMaxBlockAcquireFailures()) {
+           throw new BlockMissingException(src, "Could not obtain block: " + blockInfo,
+                                           block.getStartOffset());
+         }
+@@ -751,22 +759,22 @@
+           // alleviating the request rate from the server. Similarly the 3rd retry
+           // will wait 6000ms grace period before retry and the waiting window is
+           // expanded to 9000ms. 
+-          double waitTime = timeWindow * failures +       // grace period for the last round of attempt
+-            timeWindow * (failures + 1) * DFSUtil.getRandom().nextDouble(); // expanding time window for each failure
+-          DFSClient.LOG.warn("DFS chooseDataNode: got # " + (failures + 1) + " IOException, will wait for " + waitTime + " msec.");
++          double waitTime = timeWindow * getFailures() +       // grace period for the last round of attempt
++            timeWindow * (getFailures() + 1) * DFSUtil.getRandom().nextDouble(); // expanding time window for each failure
++          DFSClient.LOG.warn("DFS chooseDataNode: got # " + (getFailures() + 1) + " IOException, will wait for " + waitTime + " msec.");
+           Thread.sleep((long)waitTime);
+         } catch (InterruptedException iex) {
+         }
+         deadNodes.clear(); //2nd option is to remove only nodes[blockId]
+         openInfo();
+         block = getBlockAt(block.getStartOffset(), false);
+-        failures++;
++        incFailures();
+         continue;
+       }
+     }
+   } 
+       
+-  private void fetchBlockByteRange(LocatedBlock block, long start, long end,
++  protected void fetchBlockByteRange(LocatedBlock block, long start, long end,
+       byte[] buf, int offset,
+       Map<ExtendedBlock, Set<DatanodeInfo>> corruptedBlockMap)
+       throws IOException {
+@@ -978,7 +986,7 @@
+     if (closed) {
+       throw new IOException("Stream closed");
+     }
+-    failures = 0;
++    resetFailures();
+     long filelen = getFileLength();
+     if ((position < 0) || (position >= filelen)) {
+       return -1;
+@@ -1030,7 +1038,7 @@
+    * @param corruptedBlockMap, map of corrupted blocks
+    * @param dataNodeCount, number of data nodes who contains the block replicas
+    */
+-  private void reportCheckSumFailure(
++  protected void reportCheckSumFailure(
+       Map<ExtendedBlock, Set<DatanodeInfo>> corruptedBlockMap, 
+       int dataNodeCount) {
+     if (corruptedBlockMap.isEmpty()) {
+diff -ru orig/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DistributedFileSystem.java new/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DistributedFileSystem.java
+--- orig/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DistributedFileSystem.java	2013-08-28 15:17:54.709541028 -0700
++++ new/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DistributedFileSystem.java	2013-08-28 15:17:55.105508367 -0700
+@@ -81,7 +81,7 @@
+   private Path workingDir;
+   private URI uri;
+ 
+-  DFSClient dfs;
++  protected DFSClient dfs;
+   private boolean verifyChecksum = true;
+   
+   static{
+diff -ru orig/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNode.java new/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNode.java
+--- orig/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNode.java	2013-08-28 15:17:54.610549193 -0700
++++ new/src/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/NameNode.java	2013-08-28 15:17:55.007516449 -0700
+@@ -325,13 +325,15 @@
+           "Invalid URI for NameNode address (check %s): %s has no authority.",
+           FileSystem.FS_DEFAULT_NAME_KEY, filesystemURI.toString()));
+     }
+-    if (!HdfsConstants.HDFS_URI_SCHEME.equalsIgnoreCase(
++    // comment this out so we can use schemes other than hdfs!!
++    /* if (!HdfsConstants.HDFS_URI_SCHEME.equalsIgnoreCase(
+         filesystemURI.getScheme())) {
+       throw new IllegalArgumentException(String.format(
+           "Invalid URI for NameNode address (check %s): %s is not of scheme '%s'.",
+           FileSystem.FS_DEFAULT_NAME_KEY, filesystemURI.toString(),
+           HdfsConstants.HDFS_URI_SCHEME));
+     }
++    */
+     return getAddress(authority);
+   }
+ 

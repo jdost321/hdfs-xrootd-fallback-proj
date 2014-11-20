@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Example file for HDFS XRootd FallBack
+     Goes to /etc/hadoop/conf.my_cluster/xfbfs-site.xml
+-->
+
+<configuration>
+
+  <!-- List of namespaces / file-name prefixes that will use the XFB
+       functionality. -->
+  <property>
+     <name>xfbfs.namespace</name>
+     <value>/cms/phedex/store/, /cms/store/user/, /cms/store/group/</value>
+  </property>
+
+  <!-- String to prefix the file-name with when opening it via XRootd.
+       This is typically just the protocol and the XRootd server / redirector
+       that you want to use for fallback. Note the trailing '/'. -->
+  <property>
+     <name>xfbfs.xrootd_prefix</name>
+     <value>root://xrootd.unl.edu/</value>
+  </property>
+
+  <!-- String to postfix the file-name with when opening it via XRootd.
+       Most likely use of this is to prevent XRootd from redirecting the XFB
+       client back to original site - for UCSD we list our redirector here. -->
+  <property>
+     <name>xfbfs.xrootd_postfix</name>
+     <value>&amp;tried=xrootd.t2.ucsd.edu</value>
+  </property>
+
+  <!-- HDFS handles the files in the local namespace / file-name prefix which
+       is often different than the prefix on XRootd servers. This is a set of
+       regexp, replacement pairs aimed at solving this problem. Replacement
+       string of the first matching regexp will be used. -->
+  <property>
+     <name>xfbfs.pfn_to_lfn_regexps</name>
+     <value>
+^/cms/store/user/,   /store/user/,
+^/cms/store/group/,  /store/group/,
+^/cms/phedex/store/, /store/
+     </value>
+  </property>  
+
+  <!-- Require PFN to match one of the regexps. -->
+  <property>
+     <name>xfbfs.pfn_to_lfn_must_match</name>
+     <value>false</value>
+  </property>
+
+  <!-- Host that collects the UDP log.
+       HDFS exceptions and XrdBlockFetcher operations are reported as UDP
+       messages. Example collector, hdfs-mon-snatcher.pl, is part of the
+       package. -->
+  <property>
+     <name>xfbfs.udplog_host</name>
+     <value>desire.physics.ucsd.edu</value>
+  </property>
+
+  <!-- Port where UDP log is being collected -->
+  <property>
+     <name>xfbfs.udplog_port</name>
+     <value>9940</value>
+  </property>
+
+  <!-- Log level:
+       0 - log errors, exceptions, xrd open & close events
+       1 - also log PFN to LFN translations
+       2 - also log individual xrd read requests -->
+  <property>
+    <name>xfbfs.udplog_level</name>
+     <value>1</value>
+  </property>
+
+</configuration>
