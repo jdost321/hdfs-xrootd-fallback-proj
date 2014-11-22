@@ -59,7 +59,7 @@ public:
     std::string postfix;
 
     int                      pfn_to_lfn_size;
-    std::vector<pcrecpp::RE> pfn_to_lfn_regexps;
+    std::vector<pcrecpp::RE*> pfn_to_lfn_regexps;
     std::vector<std::string> pfn_to_lfn_replacements;
 
     bool                     pfn_to_lfn_must_match;
@@ -78,10 +78,16 @@ public:
       prefix = "root://uaf-9.t2.ucsd.edu/";
     }
 
+    ~Config()
+    {
+      for (std::vector<pcrecpp::RE*>::iterator i = pfn_to_lfn_regexps.begin(); i != pfn_to_lfn_regexps.end(); ++i)
+        delete *i;
+    }
+
     void add_pfn_to_lfn_rule(const std::string &regexp, const std::string &replace)
     {
       ++pfn_to_lfn_size;
-      pfn_to_lfn_regexps     .push_back(pcrecpp::RE(regexp));
+      pfn_to_lfn_regexps     .push_back(new pcrecpp::RE(regexp));
       pfn_to_lfn_replacements.push_back(replace);
     }
 
@@ -92,7 +98,7 @@ public:
 
       for (int i = 0; i < pfn_to_lfn_size; ++i)
       {
-        if (pfn_to_lfn_regexps[i].Replace(pfn_to_lfn_replacements[i], &pfn))
+        if (pfn_to_lfn_regexps[i]->Replace(pfn_to_lfn_replacements[i], &pfn))
         {
           return true;
         }
