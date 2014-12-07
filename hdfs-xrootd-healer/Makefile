@@ -1,3 +1,6 @@
+# provide ability to override classpath
+JAVA_CLASSPATH =
+
 hd_common_jar := /usr/lib/hadoop/hadoop-common.jar
 hd_hdfs_jar := /usr/lib/hadoop-hdfs/hadoop-hdfs.jar
 hd_annotations_jar := /usr/lib/hadoop/hadoop-annotations.jar
@@ -23,4 +26,4 @@ square_pusher.sh
 	jar cvf $@ $(patsubst %,'%',$^)
 
 %.class: %.java
-	javac -classpath .:$(hd_common_jar):$(hd_hdfs_jar):$(hd_annotations_jar) $<
+	javac -classpath .:$(JAVA_CLASSPATH):$(hd_common_jar):$(hd_hdfs_jar):$(hd_annotations_jar) $<
