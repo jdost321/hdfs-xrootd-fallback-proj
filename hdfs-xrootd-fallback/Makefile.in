@@ -6,20 +6,21 @@ JJ := ${JAVA_HOME}
 
 XRD := /usr
 
-CXX := g++
-CPPFLAGS :=
-CXXFLAGS := -O2 -g
-LDFLAGS := 
+CXX := @CXX@
+CPPFLAGS := @CPPFLAGS@
+CXXFLAGS := @CXXFLAGS@
+LDFLAGS := @LDFLAGS@
+LN_S := @LN_S@
 
 vers := 1.0.0
 xbf_maj_vers := 1
 xbf_vers := $(xbf_maj_vers).0.0
 
-prefix := /usr/local
-sysconfdir := $(prefix)/etc
-includedir := $(prefix)/include
-exec_prefix := $(prefix)
-libdir := $(exec_prefix)/lib64
+prefix := @prefix@
+sysconfdir := @sysconfdir@
+includedir := @includedir@
+exec_prefix := @exec_prefix@
+libdir := @libdir@
 
 # provides a way to override where fallback jar gets installed
 # default to hdfs rpm client location
@@ -50,7 +51,7 @@ org/xrootd/hdfs/fallback/XrdUdpLog.class
 	javah -jni -classpath .:$(JAVA_CLASSPATH):$(hd_common_jar) -force -o $@ $(subst /,.,$(basename $<))
 
 %.o: %.cxx %.h
-	${CXX} ${CPPFLAGS} -I${JJ}/include -I${JJ}/include/linux -I/usr/include/xrootd ${CXXFLAGS} -fPIC -c $<
+	${CXX} ${CPPFLAGS} -I${JJ}/include -I${JJ}/include/linux ${CXXFLAGS} -fPIC -c $<
 
 libXrdBlockFetcher.so.$(xbf_vers): XrdBlockFetcher.o
 	${CXX} ${LDFLAGS} -shared -Wl,-soname,libXrdBlockFetcher.so.$(xbf_maj_vers) -o $@ -lXrdClient -lpcrecpp -pthread $<
@@ -73,8 +74,8 @@ install: all
 	mkdir -p $(DESTDIR)$(libdir)
 	install libXrdBlockFetcher.so.$(xbf_vers) $(DESTDIR)$(libdir)
 	cd $(DESTDIR)$(libdir) && \
-	ln -s -f libXrdBlockFetcher.so.$(xbf_vers) libXrdBlockFetcher.so.$(xbf_maj_vers) && \
-	ln -s -f libXrdBlockFetcher.so.$(xbf_maj_vers) libXrdBlockFetcher.so
+	$(LN_S) -f libXrdBlockFetcher.so.$(xbf_vers) libXrdBlockFetcher.so.$(xbf_maj_vers) && \
+	$(LN_S) -f libXrdBlockFetcher.so.$(xbf_maj_vers) libXrdBlockFetcher.so
 	mkdir -p $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/
 	install -m 644 xfbfs-site.xml $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/
 
