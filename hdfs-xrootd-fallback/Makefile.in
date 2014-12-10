@@ -1,15 +1,11 @@
-# Grrr, how can I get this from java??? Like java-config or sth.
-# JJ := /usr/lib/jvm/java-1.6.0-sun-1.6.0.45
-# JJ := /usr/lib/jvm/java-1.7.0-openjdk.x86_64
-# Mysteriously, this works, too:
-JJ := ${JAVA_HOME}
-
-XRD := /usr
-
 CXX := @CXX@
 CPPFLAGS := @CPPFLAGS@
 CXXFLAGS := @CXXFLAGS@
 LDFLAGS := @LDFLAGS@
+JAVA_HOME := @JAVA_HOME@
+HADOOP_HOME := @HADOOP_HOME@
+HADOOP_HDFS_HOME := @HADOOP_HDFS_HOME@
+HADOOP_CLIENT := @HADOOP_CLIENT@
 LN_S := @LN_S@
 
 vers := 1.0.0
@@ -22,16 +18,9 @@ includedir := @includedir@
 exec_prefix := @exec_prefix@
 libdir := @libdir@
 
-# provides a way to override where fallback jar gets installed
-# default to hdfs rpm client location
-HADOOP_CLIENT_DIR := /usr/lib/hadoop/client
-
-# provides ability to override classpath
-JAVA_CLASSPATH :=
-
-hd_common_jar := /usr/lib/hadoop/hadoop-common.jar
-hd_annotations_jar := /usr/lib/hadoop/hadoop-annotations.jar
-hd_hdfs_jar := /usr/lib/hadoop-hdfs/hadoop-hdfs.jar
+hd_common_jar := $(HADOOP_HOME)/hadoop-common.jar
+hd_annotations_jar := $(HADOOP_HOME)/hadoop-annotations.jar
+hd_hdfs_jar := $(HADOOP_HDFS_HOME)/hadoop-hdfs.jar
 
 all: hdfs-xrootd-fallback-$(vers).jar libXrdBlockFetcher.so.$(xbf_vers)
 
@@ -45,32 +34,22 @@ org/xrootd/hdfs/fallback/XrdUdpLog.class
 	jar cvf $@ $(patsubst %,'%',$^)
 
 %.class: %.java
-	javac -classpath .:$(JAVA_CLASSPATH):$(hd_common_jar):$(hd_annotations_jar):$(hd_hdfs_jar) $<
+	javac -classpath .:$(hd_common_jar):$(hd_annotations_jar):$(hd_hdfs_jar) $<
 
 %.h: org/xrootd/hdfs/fallback/%.class
-	javah -jni -classpath .:$(JAVA_CLASSPATH):$(hd_common_jar) -force -o $@ $(subst /,.,$(basename $<))
+	javah -jni -classpath .:$(hd_common_jar) -force -o $@ $(subst /,.,$(basename $<))
 
 %.o: %.cxx %.h
-	${CXX} ${CPPFLAGS} -I${JJ}/include -I${JJ}/include/linux ${CXXFLAGS} -fPIC -c $<
+	${CXX} ${CPPFLAGS} -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux ${CXXFLAGS} -fPIC -c $<
 
 libXrdBlockFetcher.so.$(xbf_vers): XrdBlockFetcher.o
 	${CXX} ${LDFLAGS} -shared -Wl,-soname,libXrdBlockFetcher.so.$(xbf_maj_vers) -o $@ -lXrdClient -lpcrecpp -pthread $<
 
-test: XBFTest.class
-
-XBFTest.class: XBFTest.java
-	javac $<
-
 .PRECIOUS: %.h %.o
 
-test_install:
-	cp hadoop-hdfs-2.0.0-cdh4.1.1.jar /usr/lib/hadoop-hdfs/
-	cp hdfs-xrootd-fallback-$(vers).jar /usr/lib/hadoop/client/
-	cp libXrdBlockFetcher.so.$(xbf_vers) /usr/lib/
-
 install: all
-	mkdir -p $(DESTDIR)$(HADOOP_CLIENT_DIR)
-	install -m 644 hdfs-xrootd-fallback-$(vers).jar $(DESTDIR)$(HADOOP_CLIENT_DIR)
+	mkdir -p $(DESTDIR)$(HADOOP_CLIENT)
+	install -m 644 hdfs-xrootd-fallback-$(vers).jar $(DESTDIR)$(HADOOP_CLIENT)
 	mkdir -p $(DESTDIR)$(libdir)
 	install libXrdBlockFetcher.so.$(xbf_vers) $(DESTDIR)$(libdir)
 	cd $(DESTDIR)$(libdir) && \
@@ -80,7 +59,7 @@ install: all
 	install -m 644 xfbfs-site.xml $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/
 
 uninstall:
-	rm -f $(DESTDIR)$(HADOOP_CLIENT_DIR)/hdfs-xrootd-fallback-$(vers).jar
+	rm -f $(DESTDIR)$(HADOOP_CLIENT)/hdfs-xrootd-fallback-$(vers).jar
 	rm -f $(DESTDIR)$(libdir)/libXrdBlockFetcher.so*
 	rm -f $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/xfbfs-site.xml
 
