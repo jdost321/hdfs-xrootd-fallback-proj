@@ -9,6 +9,7 @@ AC_ARG_VAR([JAVA_HOME], [*REQUIRED*])
 AC_ARG_VAR([HADOOP_HOME], [*REQUIRED* directory containing hadoop-common.jar])
 AC_ARG_VAR([HADOOP_HDFS_HOME], [*REQUIRED* directory containing hadoop-hdfs.jar])
 AC_ARG_VAR([HADOOP_CLIENT], [defaults to $(HADOOP_HOME}/client, fallback jar installs here])
+AC_ARG_VAR([HADOOP_LIBEXEC_DIR], [defaults to $(HADOOP_HOME}/libexec, used by healer])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -55,6 +56,14 @@ else
   AC_MSG_RESULT(yes)
 fi
 
+AC_MSG_CHECKING([if HADOOP_HADOOP_LIBEXEC_DIR is set])
+if test "x$HADOOP_LIBEXEC_DIR" = x; then
+  AC_MSG_RESULT(no)
+  HADOOP_LIBEXEC_DIR=${HADOOP_HOME}/libexec
+else
+  AC_MSG_RESULT(yes)
+fi
+
 # Checks for header files.
 AC_CHECK_FILE([${JAVA_HOME}/include/jni.h], [],
   [AC_MSG_ERROR([cannot find \${JAVA_HOME}/include/jni.h, exiting])])
@@ -71,5 +80,6 @@ AC_CHECK_HEADERS([XrdClient/XrdClient.hh], [],
 
 AC_CONFIG_FILES([Makefile
                  hdfs-xrootd-fallback/Makefile
-                 hdfs-xrootd-healer/Makefile])
+                 hdfs-xrootd-healer/Makefile
+                 hdfs-xrootd-healer/hdfs_xrootd_healer.sh])
 AC_OUTPUT
