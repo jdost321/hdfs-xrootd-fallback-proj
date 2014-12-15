@@ -10,8 +10,10 @@ clean:
 	$(MAKE) -C hdfs-xrootd-fallback clean
 	$(MAKE) -C hdfs-xrootd-healer clean
 
-install: all
+install:
 	$(MAKE) -C hdfs-xrootd-fallback install
+	$(MAKE) -C hdfs-xrootd-healer install
 
 uninstall:
 	$(MAKE) -C hdfs-xrootd-fallback uninstall
+	$(MAKE) -C hdfs-xrootd-healer uninstall

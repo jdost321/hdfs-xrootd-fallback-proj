@@ -5,6 +5,7 @@ HADOOP_CLIENT := @HADOOP_CLIENT@
 prefix := @prefix@
 exec_prefix := @exec_prefix@
 bindir := @bindir@
+sysconfdir := @sysconfdir@
 
 hd_common_jar := $(HADOOP_HOME)/hadoop-common.jar
 hd_annotations_jar := $(HADOOP_HOME)/hadoop-annotations.jar
@@ -36,8 +37,10 @@ square_pusher.sh
 install: all
 	mkdir -p $(DESTDIR)$(HADOOP_CLIENT)
 	install -m 644 hdfs-xrootd-healer.jar $(DESTDIR)$(HADOOP_CLIENT)
-	mkdir -p $(DESTIDIR)$(bindir)
-	install hdfs_xrootd_healer.sh $(DESTIDIR)$(bindir)
+	mkdir -p $(DESTDIR)$(bindir)
+	install hdfs_xrootd_healer.sh $(DESTDIR)$(bindir)
+	mkdir -p $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
+	install -m 644 hdfs-xrootd-healer.cfg $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
 
 uninstall:
 	rm -f $(DESTDIR)$(HADOOP_CLIENT)/hdfs-xrootd-healer.jar
