@@ -1,5 +1,10 @@
 HADOOP_HOME := @HADOOP_HOME@
 HADOOP_HDFS_HOME := @HADOOP_HDFS_HOME@
+HADOOP_CLIENT := @HADOOP_CLIENT@
+
+prefix := @prefix@
+exec_prefix := @exec_prefix@
+bindir := @bindir@
 
 hd_common_jar := $(HADOOP_HOME)/hadoop-common.jar
 hd_annotations_jar := $(HADOOP_HOME)/hadoop-annotations.jar
@@ -27,3 +32,13 @@ square_pusher.sh
 
 %.class: %.java
 	javac -classpath .:$(hd_common_jar):$(hd_hdfs_jar):$(hd_annotations_jar) $<
+
+install: all
+	mkdir -p $(DESTDIR)$(HADOOP_CLIENT)
+	install -m 644 hdfs-xrootd-healer.jar $(DESTDIR)$(HADOOP_CLIENT)
+	mkdir -p $(DESTIDIR)$(bindir)
+	install hdfs_xrootd_healer.sh $(DESTIDIR)$(bindir)
+
+uninstall:
+	rm -f $(DESTDIR)$(HADOOP_CLIENT)/hdfs-xrootd-healer.jar
+	rm -f $(DESTIDIR)$(bindir)/hdfs_xrootd_healer.sh
