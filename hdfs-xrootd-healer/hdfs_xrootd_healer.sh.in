@@ -12,10 +12,12 @@ elif [ -e /usr/lib/bigtop-utils/bigtop-detect-javahome ]; then
 fi
 
 # hack to include our jar in CLASSPATH
-HADOOP_CLASSPATH=`dirname $0`/hdfs-xrootd-healer.jar
+HADOOP_CLASSPATH=@libdir@/hdfs-xrootd-healer/hdfs-xrootd-healer.jar
 
 export HADOOP_LIBEXEC_DIR=@HADOOP_LIBEXEC_DIR@
 . $HADOOP_LIBEXEC_DIR/hadoop-config.sh
+
+export HDFS_XRD_HEALER_CONF=@sysconfdir@/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg
 
 # Always respect HADOOP_OPTS and HADOOP_CLIENT_OPTS
 HADOOP_OPTS="$HADOOP_OPTS $HADOOP_CLIENT_OPTS"

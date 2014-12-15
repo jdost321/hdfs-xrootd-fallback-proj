@@ -24,7 +24,6 @@ import java.util.Arrays;
 
 public class BlockHealer {
   private static final Config CONF = new Config();
-  private static final String CONF_PATH  = "/etc/xrootd/hdfs-xrootd-healer.cfg";
   private static final Logger LOGGER = new Logger();
   private static final String LOG_PATH  = "/var/log/xrootd/hdfs-xrootd-healer.log";
   private static boolean DEBUG = false;
@@ -120,7 +119,13 @@ public class BlockHealer {
   }
 
   public static void main(String[] argv) throws Exception {
-    CONF.parse(CONF_PATH);
+    String conf_path = System.getenv("HDFS_XRD_HEALER_CONF");
+    if (conf_path == null) {
+      System.err.println("HDFS_XRD_HEALER_CONF is not set in the environment, exiting.");
+      System.exit(1);
+    }
+    
+    CONF.parse(conf_path);
 
     for (String a: argv) {
       if (a.equals("-debug"))
