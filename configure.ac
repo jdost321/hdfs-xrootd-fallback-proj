@@ -80,7 +80,5 @@ AC_CHECK_HEADERS([XrdClient/XrdClient.hh], [],
 
 AC_CONFIG_FILES([Makefile
                  hdfs-xrootd-fallback/Makefile
-                 hdfs-xrootd-healer/Makefile
-                 hdfs-xrootd-healer/hdfs_xrootd_healer.sh
-                 hdfs-xrootd-healer/hdfs-xrootd-healer.cfg])
+                 hdfs-xrootd-healer/Makefile])
 AC_OUTPUT

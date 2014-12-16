@@ -13,10 +13,10 @@ hd_common_jar := $(HADOOP_HOME)/hadoop-common.jar
 hd_annotations_jar := $(HADOOP_HOME)/hadoop-annotations.jar
 hd_hdfs_jar := $(HADOOP_HDFS_HOME)/hadoop-hdfs.jar
 
-all: hdfs-xrootd-healer.jar 
+all: hdfs-xrootd-healer.jar hdfs_xrootd_healer.sh hdfs-xrootd-healer.cfg
 
 clean:
-	rm -f edu/ucsd/t2/hdfs/xrootd/healer/*.class *.jar
+	rm -f edu/ucsd/t2/hdfs/xrootd/healer/*.class *.jar hdfs_xrootd_healer.sh *.cfg
 
 hdfs-xrootd-healer.jar: edu/ucsd/t2/hdfs/xrootd/healer/BlockHealer.class \
 edu/ucsd/t2/hdfs/xrootd/healer/Block.class \
@@ -35,6 +35,14 @@ square_pusher.sh
 
 %.class: %.java
 	javac -classpath .:$(hd_common_jar):$(hd_hdfs_jar):$(hd_annotations_jar) $<
+
+hdfs_xrootd_healer.sh: hdfs_xrootd_healer.sh.in 
+	sed -e 's|[@]libdir@|$(libdir)|' \
+	-e 's|[@]sysconfdir@|$(sysconfdir)|' \
+	-e 's|[@]HADOOP_LIBEXEC_DIR@|$(HADOOP_LIBEXEC_DIR)|' $< > $@
+
+hdfs-xrootd-healer.cfg: hdfs-xrootd-healer.cfg.in 
+	sed 's|[@]localstatedir@|$(localstatedir)|' $< > $@
 
 install: all
 	mkdir -p $(DESTDIR)$(libdir)/hdfs-xrootd-healer
