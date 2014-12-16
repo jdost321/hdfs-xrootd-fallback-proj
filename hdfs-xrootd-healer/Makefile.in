@@ -58,4 +58,4 @@ uninstall:
 	rm -rf $(DESTDIR)$(libdir)/hdfs-xrootd-healer
 	rm -rf $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
 	rm -rf $(DESTDIR)$(localstatedir)/log/hdfs-xrootd-healer
-	rm -f $(DESTIDIR)$(bindir)/hdfs_xrootd_healer.sh
+	rm -f $(DESTDIR)$(bindir)/hdfs_xrootd_healer.sh
