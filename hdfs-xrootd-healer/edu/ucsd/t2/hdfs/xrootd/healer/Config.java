@@ -17,6 +17,7 @@ public class Config {
     map.put("CACHE_DIR", null);
     map.put("HDFS_TMP_DIR", null);
     map.put("SSH_USER", null);
+    map.put("LOG", null);
   }
 
   public void parse(String file) throws IOException {

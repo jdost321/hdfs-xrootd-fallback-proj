@@ -25,7 +25,6 @@ import java.util.Arrays;
 public class BlockHealer {
   private static final Config CONF = new Config();
   private static final Logger LOGGER = new Logger();
-  private static final String LOG_PATH  = "/var/log/xrootd/hdfs-xrootd-healer.log";
   private static boolean DEBUG = false;
   private static boolean PRETEND = false;
   private static final int BUF_SIZE = 8192; // chose same size as java's default for Buffered streams
@@ -138,7 +137,8 @@ public class BlockHealer {
 
     PrintStream logStream = null;
     if (!DEBUG) {
-      logStream = new PrintStream(new BufferedOutputStream(new FileOutputStream(LOG_PATH, true)), true);
+      String log_path = CONF.get("LOG");
+      logStream = new PrintStream(new BufferedOutputStream(new FileOutputStream(log_path, true)), true);
       LOGGER.setStream(logStream);
     }
 

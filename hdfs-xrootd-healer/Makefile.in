@@ -7,6 +7,7 @@ exec_prefix := @exec_prefix@
 bindir := @bindir@
 sysconfdir := @sysconfdir@
 libdir := @libdir@
+localstatedir := @localstatedir@
 
 hd_common_jar := $(HADOOP_HOME)/hadoop-common.jar
 hd_annotations_jar := $(HADOOP_HOME)/hadoop-annotations.jar
@@ -42,8 +43,10 @@ install: all
 	install hdfs_xrootd_healer.sh $(DESTDIR)$(bindir)
 	mkdir -p $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
 	install -m 644 hdfs-xrootd-healer.cfg $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
+	mkdir -p $(DESTDIR)$(localstatedir)/hdfs-xrootd-healer
 
 uninstall:
 	rm -rf $(DESTDIR)$(libdir)/hdfs-xrootd-healer
 	rm -rf $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
+	rm -rf $(DESTDIR)$(localstatedir)/hdfs-xrootd-healer
 	rm -f $(DESTIDIR)$(bindir)/hdfs_xrootd_healer.sh

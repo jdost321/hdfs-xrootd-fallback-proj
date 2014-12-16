@@ -3562,7 +3562,7 @@ done
 
 # Checks for library functions.
 
-ac_config_files="$ac_config_files Makefile hdfs-xrootd-fallback/Makefile hdfs-xrootd-healer/Makefile hdfs-xrootd-healer/hdfs_xrootd_healer.sh"
+ac_config_files="$ac_config_files Makefile hdfs-xrootd-fallback/Makefile hdfs-xrootd-healer/Makefile hdfs-xrootd-healer/hdfs_xrootd_healer.sh hdfs-xrootd-healer/hdfs-xrootd-healer.cfg"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -4176,6 +4176,7 @@ do
     "hdfs-xrootd-fallback/Makefile") CONFIG_FILES="$CONFIG_FILES hdfs-xrootd-fallback/Makefile" ;;
     "hdfs-xrootd-healer/Makefile") CONFIG_FILES="$CONFIG_FILES hdfs-xrootd-healer/Makefile" ;;
     "hdfs-xrootd-healer/hdfs_xrootd_healer.sh") CONFIG_FILES="$CONFIG_FILES hdfs-xrootd-healer/hdfs_xrootd_healer.sh" ;;
+    "hdfs-xrootd-healer/hdfs-xrootd-healer.cfg") CONFIG_FILES="$CONFIG_FILES hdfs-xrootd-healer/hdfs-xrootd-healer.cfg" ;;
 
   *) { { $as_echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 $as_echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
