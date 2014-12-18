@@ -1,0 +1,8 @@
+/var/log/hdfs-xrootd-healer/hdfs-xrootd-healer.log {
+  missingok
+  notifempty
+  daily
+  rotate 30
+  compress
+  copytruncate
+}

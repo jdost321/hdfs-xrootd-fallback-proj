@@ -1,0 +1,1 @@
+0 4 * * * hdfshealer [ -f /var/lock/subsys/hdfs-xrootd-healer ] && /usr/libexec/hdfs-xrootd-healer/hdfs_xrootd_healer.sh

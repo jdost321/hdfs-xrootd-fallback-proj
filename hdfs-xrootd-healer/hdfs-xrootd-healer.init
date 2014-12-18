@@ -1,0 +1,59 @@
+#!/bin/sh
+#
+# hdfs-xrootd-healer Injects repaired blocks from xrootd cache back into hadoop
+#
+# chkconfig:	- 85 25
+# description:  Injects repaired blocks from xrootd cache back into hadoop
+#
+
+# source function library
+. /etc/rc.d/init.d/functions
+
+lockfile=/var/lock/subsys/hdfs-xrootd-healer
+
+RETVAL=0
+
+start() {
+	action $"Enabling periodic hdfs-xrootd-healer: " touch "$lockfile" 
+	RETVAL=$?
+}
+
+stop() {
+	action $"Disabling periodic hdfs-xrootd-healer: " rm -f "$lockfile" 
+	RETVAL=$?
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop) 
+	stop
+	;;
+  restart|force-reload)
+	$0 stop
+	$0 start
+	;;
+  reload)
+	;;
+  condrestart)
+	[ -f "$lockfile" ] && {
+          $0 stop
+          $0 start
+        }
+	;;
+  status)
+	if [ -f $lockfile ]; then
+		echo $"Periodic hdfs-xrootd-healer is enabled."
+		RETVAL=0
+	else
+		echo $"Periodic hdfs-xrootd-healer is disabled."
+		RETVAL=3
+	fi
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|status|restart|reload|force-reload|condrestart}"
+	exit 1
+esac
+
+exit $RETVAL
