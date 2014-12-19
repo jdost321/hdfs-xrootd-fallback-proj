@@ -598,7 +598,7 @@ PACKAGE_VERSION='1.0.0'
 PACKAGE_STRING='hdfs-xrootd-healer 1.0.0'
 PACKAGE_BUGREPORT=''
 
-ac_unique_file="edu/ucsd/t2/hdfs/xrootd/healer/BlockHealer.java"
+ac_unique_file="src/edu/ucsd/t2/hdfs/xrootd/healer/BlockHealer.java"
 ac_subst_vars='LTLIBOBJS
 LIB@&t@OBJS
 HAVE_JAVAC

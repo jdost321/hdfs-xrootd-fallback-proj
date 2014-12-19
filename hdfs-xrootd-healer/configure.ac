@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.63])
 AC_INIT([hdfs-xrootd-healer], [1.0.0])
-AC_CONFIG_SRCDIR([edu/ucsd/t2/hdfs/xrootd/healer/BlockHealer.java])
+AC_CONFIG_SRCDIR([src/edu/ucsd/t2/hdfs/xrootd/healer/BlockHealer.java])
 
 AC_ARG_VAR([HADOOP_HOME], [*REQUIRED* directory containing hadoop-common.jar])
 AC_ARG_VAR([HADOOP_HDFS_HOME], [*REQUIRED* directory containing hadoop-hdfs.jar])
