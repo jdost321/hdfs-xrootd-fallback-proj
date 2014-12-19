@@ -25,27 +25,28 @@ hd_hdfs_jar := $(HADOOP_HDFS_HOME)/hadoop-hdfs.jar
 all: hdfs-xrootd-fallback-$(vers).jar libXrdBlockFetcher.so.$(xbf_vers)
 
 clean:
-	rm -f *.class org/xrootd/hdfs/fallback/*.class *.so* *.o *.h *.jar
+	rm -f src/org/xrootd/hdfs/fallback/*.class *.so* *.o src/*.h *.jar
 
-hdfs-xrootd-fallback-$(vers).jar: org/xrootd/hdfs/fallback/XrdFallBackFileSystem.class \
-org/xrootd/hdfs/fallback/XFBFSClient.class org/xrootd/hdfs/fallback/XFBFSInputStream.class \
-org/xrootd/hdfs/fallback/XFBFSClient$$Config.class org/xrootd/hdfs/fallback/XrdBlockFetcher.class \
-org/xrootd/hdfs/fallback/XrdUdpLog.class
-	jar cvf $@ $(patsubst %,'%',$^)
+hdfs-xrootd-fallback-$(vers).jar: src/org/xrootd/hdfs/fallback/XrdFallBackFileSystem.class \
+src/org/xrootd/hdfs/fallback/XFBFSClient.class src/org/xrootd/hdfs/fallback/XFBFSInputStream.class \
+src/org/xrootd/hdfs/fallback/XFBFSClient$$Config.class src/org/xrootd/hdfs/fallback/XrdBlockFetcher.class \
+src/org/xrootd/hdfs/fallback/XrdUdpLog.class
+	jar cvf $@ $(patsubst src/%,-C src '%',$^)
 
 %.class: %.java
-	javac -classpath .:$(hd_common_jar):$(hd_annotations_jar):$(hd_hdfs_jar) $<
+	javac -classpath src:$(hd_common_jar):$(hd_annotations_jar):$(hd_hdfs_jar) $<
 
-%.h: org/xrootd/hdfs/fallback/%.class
-	javah -jni -classpath .:$(hd_common_jar) -force -o $@ $(subst /,.,$(basename $<))
+src/%.h: src/org/xrootd/hdfs/fallback/%.class
+	cd src && \
+	javah -jni -classpath .:$(hd_common_jar) -force -o $(patsubst src/%,%,$@) $(subst /,.,$(basename $(patsubst src/%,%,$<)))
 
-%.o: %.cxx %.h
+%.o: src/%.cxx src/%.h
 	${CXX} ${CPPFLAGS} -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux ${CXXFLAGS} -fPIC -c $<
 
 libXrdBlockFetcher.so.$(xbf_vers): XrdBlockFetcher.o
 	${CXX} ${LDFLAGS} -shared -Wl,-soname,libXrdBlockFetcher.so.$(xbf_maj_vers) -o $@ -lXrdClient -lpcrecpp -pthread $<
 
-.PRECIOUS: %.h %.o
+.PRECIOUS: src/%.h %.o
 
 install: all
 	mkdir -p $(DESTDIR)$(HADOOP_CLIENT)
@@ -56,7 +57,7 @@ install: all
 	$(LN_S) -f libXrdBlockFetcher.so.$(xbf_vers) libXrdBlockFetcher.so.$(xbf_maj_vers) && \
 	$(LN_S) -f libXrdBlockFetcher.so.$(xbf_maj_vers) libXrdBlockFetcher.so
 	mkdir -p $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/
-	$(INSTALL) -m 644 xfbfs-site.xml $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/
+	$(INSTALL) -m 644 config/xfbfs-site.xml $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/
 
 uninstall:
 	rm -f $(DESTDIR)$(HADOOP_CLIENT)/hdfs-xrootd-fallback-$(vers).jar

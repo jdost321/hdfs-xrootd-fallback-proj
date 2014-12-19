@@ -598,7 +598,7 @@ PACKAGE_VERSION='1.0.0'
 PACKAGE_STRING='hdfs-xrootd-fallback 1.0.0'
 PACKAGE_BUGREPORT=''
 
-ac_unique_file="XrdBlockFetcher.cxx"
+ac_unique_file="src/XrdBlockFetcher.cxx"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
