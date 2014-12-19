@@ -1,7 +1,8 @@
 HADOOP_HOME := @HADOOP_HOME@
 HADOOP_HDFS_HOME := @HADOOP_HDFS_HOME@
-HADOOP_CLIENT := @HADOOP_CLIENT@
 HADOOP_LIBEXEC_DIR := @HADOOP_LIBEXEC_DIR@
+
+INSTALL := @INSTALL@
 
 prefix := @prefix@
 exec_prefix := @exec_prefix@
@@ -47,11 +48,11 @@ hdfs-xrootd-healer.cfg: hdfs-xrootd-healer.cfg.in
 
 install: all
 	mkdir -p $(DESTDIR)$(libdir)/hdfs-xrootd-healer
-	install -m 644 hdfs-xrootd-healer.jar $(DESTDIR)$(libdir)/hdfs-xrootd-healer
+	$(INSTALL) -m 644 hdfs-xrootd-healer.jar $(DESTDIR)$(libdir)/hdfs-xrootd-healer
 	mkdir -p $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
-	install hdfs_xrootd_healer.sh $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
+	$(INSTALL) hdfs_xrootd_healer.sh $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
 	mkdir -p $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
-	install -m 644 hdfs-xrootd-healer.cfg $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
+	$(INSTALL) -m 644 hdfs-xrootd-healer.cfg $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
 	mkdir -p $(DESTDIR)$(localstatedir)/log/hdfs-xrootd-healer
 
 uninstall:

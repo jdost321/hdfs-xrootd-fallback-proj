@@ -7,6 +7,7 @@ HADOOP_HOME := @HADOOP_HOME@
 HADOOP_HDFS_HOME := @HADOOP_HDFS_HOME@
 HADOOP_CLIENT := @HADOOP_CLIENT@
 LN_S := @LN_S@
+INSTALL := @INSTALL@
 
 vers := 1.0.0
 xbf_maj_vers := 1
@@ -14,7 +15,6 @@ xbf_vers := $(xbf_maj_vers).0.0
 
 prefix := @prefix@
 sysconfdir := @sysconfdir@
-includedir := @includedir@
 exec_prefix := @exec_prefix@
 libdir := @libdir@
 
@@ -49,14 +49,14 @@ libXrdBlockFetcher.so.$(xbf_vers): XrdBlockFetcher.o
 
 install: all
 	mkdir -p $(DESTDIR)$(HADOOP_CLIENT)
-	install -m 644 hdfs-xrootd-fallback-$(vers).jar $(DESTDIR)$(HADOOP_CLIENT)
+	$(INSTALL) -m 644 hdfs-xrootd-fallback-$(vers).jar $(DESTDIR)$(HADOOP_CLIENT)
 	mkdir -p $(DESTDIR)$(libdir)
-	install libXrdBlockFetcher.so.$(xbf_vers) $(DESTDIR)$(libdir)
+	$(INSTALL) libXrdBlockFetcher.so.$(xbf_vers) $(DESTDIR)$(libdir)
 	cd $(DESTDIR)$(libdir) && \
 	$(LN_S) -f libXrdBlockFetcher.so.$(xbf_vers) libXrdBlockFetcher.so.$(xbf_maj_vers) && \
 	$(LN_S) -f libXrdBlockFetcher.so.$(xbf_maj_vers) libXrdBlockFetcher.so
 	mkdir -p $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/
-	install -m 644 xfbfs-site.xml $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/
+	$(INSTALL) -m 644 xfbfs-site.xml $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/
 
 uninstall:
 	rm -f $(DESTDIR)$(HADOOP_CLIENT)/hdfs-xrootd-fallback-$(vers).jar
