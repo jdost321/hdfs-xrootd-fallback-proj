@@ -20,6 +20,9 @@ all: hdfs-xrootd-healer.jar src/hdfs_xrootd_healer.sh config/hdfs-xrootd-healer.
 clean:
 	rm -f src/edu/ucsd/t2/hdfs/xrootd/healer/*.class *.jar src/hdfs_xrootd_healer.sh config/*.cfg
 
+distclean: clean
+	rm -f Makefile config.status config.log
+
 hdfs-xrootd-healer.jar: src/edu/ucsd/t2/hdfs/xrootd/healer/BlockHealer.class \
 src/edu/ucsd/t2/hdfs/xrootd/healer/Block.class \
 src/edu/ucsd/t2/hdfs/xrootd/healer/Config.class \

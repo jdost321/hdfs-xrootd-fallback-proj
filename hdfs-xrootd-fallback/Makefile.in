@@ -27,6 +27,9 @@ all: hdfs-xrootd-fallback-$(vers).jar libXrdBlockFetcher.so.$(xbf_vers)
 clean:
 	rm -f src/org/xrootd/hdfs/fallback/*.class *.so* *.o src/*.h *.jar
 
+distclean: clean
+	rm -f Makefile config.status config.log
+
 hdfs-xrootd-fallback-$(vers).jar: src/org/xrootd/hdfs/fallback/XrdFallBackFileSystem.class \
 src/org/xrootd/hdfs/fallback/XFBFSClient.class src/org/xrootd/hdfs/fallback/XFBFSInputStream.class \
 src/org/xrootd/hdfs/fallback/XFBFSClient$$Config.class src/org/xrootd/hdfs/fallback/XrdBlockFetcher.class \

@@ -10,6 +10,11 @@ clean:
 	$(MAKE) -C hdfs-xrootd-fallback clean
 	$(MAKE) -C hdfs-xrootd-healer clean
 
+distclean:
+	$(MAKE) -C hdfs-xrootd-fallback distclean
+	$(MAKE) -C hdfs-xrootd-healer distclean
+	rm -f Makefile config.status config.log
+
 install:
 	$(MAKE) -C hdfs-xrootd-fallback install
 	$(MAKE) -C hdfs-xrootd-healer install
