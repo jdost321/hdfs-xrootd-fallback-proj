@@ -9,7 +9,7 @@ HADOOP_CLIENT := @HADOOP_CLIENT@
 LN_S := @LN_S@
 INSTALL := @INSTALL@
 
-vers := 1.0.0
+vers := @PACKAGE_VERSION@
 xbf_maj_vers := 1
 xbf_vers := $(xbf_maj_vers).0.0
 
@@ -25,7 +25,7 @@ hd_hdfs_jar := $(HADOOP_HDFS_HOME)/hadoop-hdfs.jar
 all: hdfs-xrootd-fallback-$(vers).jar libXrdBlockFetcher.so.$(xbf_vers)
 
 clean:
-	rm -f src/org/xrootd/hdfs/fallback/*.class *.so* *.o src/*.h *.jar
+	rm -f src/org/xrootd/hdfs/fallback/*.class *.so* *.o src/*.h *.jar hdfs-xrootd-fallback-$(vers).tar.gz
 
 distclean: clean
 	rm -f Makefile config.status config.log
@@ -68,6 +68,6 @@ uninstall:
 	rm -f $(DESTDIR)$(sysconfdir)/hadoop/conf.osg/xfbfs-site.xml
 
 dist:
-	rsync -avR org/xrootd/hdfs/fallback/*.java *.cxx Makefile LICENSE README xfbfs-site.xml hdfs-xrootd-fallback-$(vers)/
+	rsync -avR src/org/xrootd/hdfs/fallback/*.java src/*.cxx Makefile.in LICENSE README config/xfbfs-site.xml autom4te.cache configure configure.ac install-sh hdfs-xrootd-fallback-$(vers)/
 	tar -czf hdfs-xrootd-fallback-$(vers).tar.gz hdfs-xrootd-fallback-$(vers)
 	rm -rf hdfs-xrootd-fallback-$(vers)
