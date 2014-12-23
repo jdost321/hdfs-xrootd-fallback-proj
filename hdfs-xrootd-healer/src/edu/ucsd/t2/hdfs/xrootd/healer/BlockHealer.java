@@ -252,7 +252,7 @@ public class BlockHealer {
           continue;
         }
         try {
-          newCksum = HdfsUtil.calcMD5(client, foundBlocks, file);
+          newCksum = HdfsUtil.calcMD5(client, foundBlocks, blockSize, file);
         }
         catch (IOException e) {
           LOGGER.log(0, "Unable calculate new checksum, skipping: " + file);

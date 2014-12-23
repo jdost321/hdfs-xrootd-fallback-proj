@@ -251,10 +251,9 @@ public class HdfsUtil {
     return cksum;
   }
 
-  public static long calcAdler32(DFSClient client, ArrayList<Block> blocks, String file) throws IOException{
+  public static long calcAdler32(DFSClient client, ArrayList<Block> blocks, int blockSize, String file) throws IOException{
     DFSInputStream stream = client.open(file);
-    // being lazy for now and hardcoding UCSD default block size
-    byte[] buf = new byte[134217728];
+    byte[] buf = new byte[blockSize];
     Adler32 sum = new Adler32();
 
     int offset = 0;
@@ -308,10 +307,9 @@ public class HdfsUtil {
     return sum.getValue();
   }
 
-  public static byte[] calcMD5(DFSClient client, ArrayList<Block> blocks, String file) throws IOException,NoSuchAlgorithmException {
+  public static byte[] calcMD5(DFSClient client, ArrayList<Block> blocks, int blockSize, String file) throws IOException,NoSuchAlgorithmException {
     DFSInputStream stream = client.open(file);
-    // being lazy for now and hardcoding UCSD default block size
-    byte[] buf = new byte[134217728];
+    byte[] buf = new byte[blockSize];
     //Adler32 sum = new Adler32();
     MessageDigest md = MessageDigest.getInstance("MD5");
 
