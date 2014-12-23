@@ -1,24 +1,15 @@
-all: fallback healer
+all: hdfs-xrootd-fallback hdfs-xrootd-healer
 
-fallback:
-	$(MAKE) -C hdfs-xrootd-fallback
+hdfs-xrootd-fallback hdfs-xrootd-healer:
+	$(MAKE) -C $@
 
-healer:
-	$(MAKE) -C hdfs-xrootd-healer
-
-clean:
-	$(MAKE) -C hdfs-xrootd-fallback clean
-	$(MAKE) -C hdfs-xrootd-healer clean
+clean install uninstall:
+	$(MAKE) -C hdfs-xrootd-fallback $@
+	$(MAKE) -C hdfs-xrootd-healer $@
 
 distclean:
-	$(MAKE) -C hdfs-xrootd-fallback distclean
-	$(MAKE) -C hdfs-xrootd-healer distclean
+	$(MAKE) -C hdfs-xrootd-fallback $@
+	$(MAKE) -C hdfs-xrootd-healer $@
 	rm -f Makefile config.status config.log
 
-install:
-	$(MAKE) -C hdfs-xrootd-fallback install
-	$(MAKE) -C hdfs-xrootd-healer install
-
-uninstall:
-	$(MAKE) -C hdfs-xrootd-fallback uninstall
-	$(MAKE) -C hdfs-xrootd-healer uninstall
+.PHONY: hdfs-xrootd-fallback hdfs-xrootd-healer
