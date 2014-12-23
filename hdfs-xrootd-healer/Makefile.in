@@ -4,6 +4,8 @@ HADOOP_LIBEXEC_DIR := @HADOOP_LIBEXEC_DIR@
 
 INSTALL := @INSTALL@
 
+vers := @PACKAGE_VERSION@
+
 prefix := @prefix@
 exec_prefix := @exec_prefix@
 libexecdir := @libexecdir@
@@ -20,7 +22,7 @@ hd_hdfs_jar := $(HADOOP_HDFS_HOME)/hadoop-hdfs.jar
 all: hdfs-xrootd-healer.jar src/hdfs_xrootd_healer.sh config/hdfs-xrootd-healer.cfg
 
 clean:
-	rm -f src/edu/ucsd/t2/hdfs/xrootd/healer/*.class *.jar src/hdfs_xrootd_healer.sh config/*.cfg
+	rm -f src/edu/ucsd/t2/hdfs/xrootd/healer/*.class *.jar src/hdfs_xrootd_healer.sh config/*.cfg hdfs-xrootd-healer-$(vers).tar.gz
 
 distclean: clean
 	rm -f Makefile config.status config.log
@@ -66,3 +68,12 @@ uninstall:
 	rm -rf $(DESTDIR)$(libdir)/hdfs-xrootd-healer
 	rm -rf $(DESTDIR)$(datadir)/hdfs-xrootd-healer
 	rm -rf $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
+
+dist:
+	rsync -avR autom4te.cache \
+	config/{hdfs-xrootd-healer.cfg.in,hdfs-xrootd-healer.cron,hdfs-xrootd-healer.init,hdfs-xrootd-healer.logrotate} \
+	configure configure.ac install-sh Makefile.in \
+	src/{hdfs_xrootd_healer.sh.in,square_pusher.sh} \
+	src/edu/ucsd/t2/hdfs/xrootd/healer/*.java hdfs-xrootd-healer-$(vers)/
+	tar -czf hdfs-xrootd-healer-$(vers).tar.gz hdfs-xrootd-healer-$(vers)
+	rm -rf hdfs-xrootd-healer-$(vers)
