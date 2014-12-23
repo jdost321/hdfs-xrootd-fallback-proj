@@ -10,6 +10,8 @@ libexecdir := @libexecdir@
 sysconfdir := @sysconfdir@
 libdir := @libdir@
 localstatedir := @localstatedir@
+datarootdir := @datarootdir@
+datadir := @datadir@
 
 hd_common_jar := $(HADOOP_HOME)/hadoop-common.jar
 hd_annotations_jar := $(HADOOP_HOME)/hadoop-annotations.jar
@@ -54,12 +56,13 @@ install: all
 	$(INSTALL) -m 644 hdfs-xrootd-healer.jar $(DESTDIR)$(libdir)/hdfs-xrootd-healer
 	mkdir -p $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
 	$(INSTALL) src/hdfs_xrootd_healer.sh $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
-	mkdir -p $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
-	$(INSTALL) -m 644 config/hdfs-xrootd-healer.cfg $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
+	mkdir -p $(DESTDIR)$(datadir)/hdfs-xrootd-healer
+	$(INSTALL) -m 644 config/hdfs-xrootd-healer.cfg config/hdfs-xrootd-healer.cron \
+	config/hdfs-xrootd-healer.init config/hdfs-xrootd-healer.logrotate \
+	$(DESTDIR)$(datadir)/hdfs-xrootd-healer
 	mkdir -p $(DESTDIR)$(localstatedir)/log/hdfs-xrootd-healer
 
 uninstall:
 	rm -rf $(DESTDIR)$(libdir)/hdfs-xrootd-healer
-	rm -rf $(DESTDIR)$(sysconfdir)/hdfs-xrootd-healer
-	rm -rf $(DESTDIR)$(localstatedir)/log/hdfs-xrootd-healer
-	rm -f $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer/hdfs_xrootd_healer.sh
+	rm -rf $(DESTDIR)$(datadir)/hdfs-xrootd-healer
+	rm -rf $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
