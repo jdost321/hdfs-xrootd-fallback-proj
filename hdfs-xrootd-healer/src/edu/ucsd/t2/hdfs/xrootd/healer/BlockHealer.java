@@ -244,8 +244,7 @@ public class BlockHealer {
         byte[] origCksum;
         byte[] newCksum;
         try {
-          // hardcode checksum path for now (can it be different?)
-          origCksum = HdfsUtil.getMD5(client,"/cksums" + file);       
+          origCksum = HdfsUtil.getMD5(client, CONF.get("CKSUM_DIR") + file);       
         }
         catch (IOException e) {
           LOGGER.log(0, "Unable to parse original checksum, skipping: /cksums" + file);

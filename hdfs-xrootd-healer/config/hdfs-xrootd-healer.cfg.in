@@ -1,6 +1,7 @@
 namespace =
 logical_dir =
 cache_dir =
-hdfs_tmp_dir =
+hdfs_tmp_dir = /tmp
+cksum_dir = /cksums
 ssh_user = hdfs
 log = @localstatedir@/log/hdfs-xrootd-healer/hdfs-xrootd-healer.log

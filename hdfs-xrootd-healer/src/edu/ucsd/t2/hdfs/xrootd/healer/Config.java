@@ -16,6 +16,7 @@ public class Config {
     map.put("LOGICAL_DIR", null);
     map.put("CACHE_DIR", null);
     map.put("HDFS_TMP_DIR", null);
+    map.put("CKSUM_DIR", null);
     map.put("SSH_USER", null);
     map.put("LOG", null);
   }
