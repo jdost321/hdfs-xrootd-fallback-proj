@@ -1,15 +1,38 @@
+vers := @PACKAGE_VERSION@
+
+.PHONY: hdfs-xrootd-fallback hdfs-xrootd-healer
+
 all: hdfs-xrootd-fallback hdfs-xrootd-healer
 
 hdfs-xrootd-fallback hdfs-xrootd-healer:
 	$(MAKE) -C $@
 
-clean install uninstall:
+install uninstall:
 	$(MAKE) -C hdfs-xrootd-fallback $@
 	$(MAKE) -C hdfs-xrootd-healer $@
 
-distclean:
+top-clean:
+	rm -f hdfs-xrootd-fallback-proj-1.0.0.tar.gz
+
+clean: top-clean
+	$(MAKE) -C hdfs-xrootd-fallback $@
+	$(MAKE) -C hdfs-xrootd-healer $@
+
+distclean: top-clean
 	$(MAKE) -C hdfs-xrootd-fallback $@
 	$(MAKE) -C hdfs-xrootd-healer $@
 	rm -f Makefile config.status config.log
 
-.PHONY: hdfs-xrootd-fallback hdfs-xrootd-healer
+dist:
+	$(MAKE) -C hdfs-xrootd-fallback $@
+	$(MAKE) -C hdfs-xrootd-healer $@
+	mkdir hdfs-xrootd-fallback-proj-$(vers)
+	cd hdfs-xrootd-fallback-proj-$(vers) && \
+	tar -xzvf ../hdfs-xrootd-fallback/hdfs-xrootd-fallback-$(vers).tar.gz && \
+	tar -xzvf ../hdfs-xrootd-healer/hdfs-xrootd-healer-$(vers).tar.gz  && \
+	mv hdfs-xrootd-fallback-$(vers) hdfs-xrootd-fallback && \
+	mv hdfs-xrootd-healer-$(vers) hdfs-xrootd-healer
+	rsync -avR autom4te.cache configure configure.ac install-sh \
+	LICENSE Makefile.in README hdfs-xrootd-fallback-proj-$(vers)/
+	tar -czf hdfs-xrootd-fallback-proj-$(vers).tar.gz hdfs-xrootd-fallback-proj-$(vers)
+	rm -rf hdfs-xrootd-fallback-proj-$(vers)
