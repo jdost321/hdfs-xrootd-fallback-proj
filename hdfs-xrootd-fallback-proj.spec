@@ -51,11 +51,43 @@ make %{?_smp_mflags}
 rm -rf %{buildroot}
 %make_install
 
+mkdir -p %{buildroot}/%{_sysconfdir}/hdfs-xrootd-healer
+mkdir -p %{buildroot}/%{_initrddir}
+mkdir -p %{buildroot}/%{_sysconfdir}/cron.d
+mkdir -p %{buildroot}/%{_sysconfdir}/logrotate.d
+install -p -m 644 %{buildroot}/%{_datadir}/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg \
+  %{buildroot}/%{_sysconfdir}/hdfs-xrootd-healer
+install -p %{buildroot}/%{_datadir}/hdfs-xrootd-healer/hdfs-xrootd-healer.init \
+  %{buildroot}/%{_initrddir}/hdfs-xrootd-healer
+install -p -m 644 %{buildroot}/%{_datadir}/hdfs-xrootd-healer/hdfs-xrootd-healer.cron \
+  %{buildroot}/%{_sysconfdir}/cron.d/hdfs-xrootd-healer
+install -p -m 644 %{buildroot}/%{_datadir}/hdfs-xrootd-healer/hdfs-xrootd-healer.logrotate \
+  %{buildroot}/%{_sysconfdir}/logrotate.d/hdfs-xrootd-healer
+mkdir -p %{buildroot}/%{_localstatedir}/lock/hdfs-xrootd-healer
+
 %clean
 rm -rf %{buildroot}
 
 %post hdfs-xrootd-fallback -p /sbin/ldconfig
 %postun hdfs-xrootd-fallback -p /sbin/ldconfig
+
+%pre hdfs-xrootd-healer
+getent group hdfshealer >/dev/null || groupadd -r hdfshealer
+getent passwd hdfshealer >/dev/null || \
+  useradd -r -g hdfshealer -d %{_sysconfdir}/hdfs-xrootd-healer -s /bin/bash \
+  -c "hdfs-xrootd-healer user" hdfshealer
+exit 0
+
+%post hdfs-xrootd-healer
+if [ $1 = 1 ];then
+  /sbin/chkconfig --add hdfs-xrootd-fallback
+fi
+
+%preun hdfs-xrootd-healer
+if [ $1 = 0 ];then
+  /sbin/service hdfs-xrootd-healer stop >/dev/null 2>&1 || :
+  /sbin/chkconfig --del hdfs-xrootd-fallback
+fi
 
 %files hdfs-xrootd-fallback
 %defattr(-,root,root,-)
@@ -70,6 +102,13 @@ rm -rf %{buildroot}
 %{_libdir}/hdfs-xrootd-healer
 %{_libexecdir}/hdfs-xrootd-healer
 %{_datadir}/hdfs-xrootd-healer
+%attr(-,hdfshealer,hdfshealer) %dir %{_sysconfdir}/hdfs-xrootd-healer
+%config(noreplace) %{_sysconfdir}/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg
+%{_initrddir}/hdfs-xrootd-healer
+%{_sysconfdir}/cron.d/hdfs-xrootd-healer
+%{_sysconfdir}/logrotate.d/hdfs-xrootd-healer
+%attr(-,hdfshealer,hdfshealer) %dir %{_localstatedir}/lock/hdfs-xrootd-healer
+%attr(-,hdfshealer,hdfshealer) %dir %{_localstatedir}/log/hdfs-xrootd-healer
 
 %changelog
 * Thu Dec 24 2014 Jeff Dost <jdost@ucsd.edu> - 1.0.0-4
