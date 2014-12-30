@@ -16,7 +16,7 @@ BuildRequires: hadoop-hdfs >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
 %description
 Hadoop extension to interface with xrootd for block healing
 
-%package hdfs-xrootd-fallback
+%package -n hdfs-xrootd-fallback
 Summary:        Hadoop extension to interface with xrootd for block healing
 Group:          System Environment/Daemons
 Requires: pcre
@@ -24,16 +24,16 @@ Requires: xrootd-client-libs >= 4.0.4
 Requires: hadoop-hdfs >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
 Requires: osg-se-hadoop-client
 
-%description hdfs-xrootd-fallback
+%description -n hdfs-xrootd-fallback
 Hadoop extension to interface with xrootd for block healing
 
-%package hdfs-xrootd-healer
+%package -n hdfs-xrootd-healer
 Summary:        Hadoop extension to interface with xrootd for block healing
 Group:          System Environment/Daemons
 Requires: hadoop-hdfs >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
 Requires: osg-se-hadoop-client
 
-%description hdfs-xrootd-healer
+%description -n hdfs-xrootd-healer
 Hadoop extension to interface with xrootd for block healing
 
 %prep
@@ -68,35 +68,35 @@ mkdir -p %{buildroot}/%{_localstatedir}/lock/hdfs-xrootd-healer
 %clean
 rm -rf %{buildroot}
 
-%post hdfs-xrootd-fallback -p /sbin/ldconfig
-%postun hdfs-xrootd-fallback -p /sbin/ldconfig
+%post -n hdfs-xrootd-fallback -p /sbin/ldconfig
+%postun -n hdfs-xrootd-fallback -p /sbin/ldconfig
 
-%pre hdfs-xrootd-healer
+%pre -n hdfs-xrootd-healer
 getent group hdfshealer >/dev/null || groupadd -r hdfshealer
 getent passwd hdfshealer >/dev/null || \
   useradd -r -g hdfshealer -d %{_sysconfdir}/hdfs-xrootd-healer -s /bin/bash \
   -c "hdfs-xrootd-healer user" hdfshealer
 exit 0
 
-%post hdfs-xrootd-healer
+%post -n hdfs-xrootd-healer
 if [ $1 = 1 ];then
   /sbin/chkconfig --add hdfs-xrootd-healer
 fi
 
-%preun hdfs-xrootd-healer
+%preun -n hdfs-xrootd-healer
 if [ $1 = 0 ];then
   /sbin/service hdfs-xrootd-healer stop >/dev/null 2>&1 || :
   /sbin/chkconfig --del hdfs-xrootd-healer
 fi
 
-%files hdfs-xrootd-fallback
+%files -n hdfs-xrootd-fallback
 %defattr(-,root,root,-)
 %doc README LICENSE
 /usr/lib/hadoop/client/hdfs-xrootd-fallback-%{version}.jar
 %{_libdir}/libXrdBlockFetcher.so*
 %config(noreplace) %{_sysconfdir}/hadoop/conf.osg/xfbfs-site.xml
 
-%files hdfs-xrootd-healer
+%files -n hdfs-xrootd-healer
 %defattr(-,root,root,-)
 %doc README LICENSE
 %{_libdir}/hdfs-xrootd-healer
@@ -107,7 +107,7 @@ fi
 %{_initrddir}/hdfs-xrootd-healer
 %{_sysconfdir}/cron.d/hdfs-xrootd-healer
 %{_sysconfdir}/logrotate.d/hdfs-xrootd-healer
-%attr(-,hdfshealer,hdfshealer) %dir %{_localstatedir}/lock/hdfs-xrootd-healer
+%attr(-,hdfshealer,hdfshealer) %{_localstatedir}/lock/hdfs-xrootd-healer
 %attr(-,hdfshealer,hdfshealer) %dir %{_localstatedir}/log/hdfs-xrootd-healer
 
 %changelog
