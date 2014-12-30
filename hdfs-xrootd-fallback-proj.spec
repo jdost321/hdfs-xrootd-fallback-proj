@@ -91,7 +91,8 @@ fi
 
 %files -n hdfs-xrootd-fallback
 %defattr(-,root,root,-)
-%doc README LICENSE
+%doc hdfs-xrootd-fallback/README
+%doc hdfs-xrootd-fallback/LICENSE
 /usr/lib/hadoop/client/hdfs-xrootd-fallback-%{version}.jar
 %{_libdir}/libXrdBlockFetcher.so*
 %config(noreplace) %{_sysconfdir}/hadoop/conf.osg/xfbfs-site.xml
