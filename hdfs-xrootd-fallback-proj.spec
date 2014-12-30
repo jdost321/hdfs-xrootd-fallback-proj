@@ -80,13 +80,13 @@ exit 0
 
 %post hdfs-xrootd-healer
 if [ $1 = 1 ];then
-  /sbin/chkconfig --add hdfs-xrootd-fallback
+  /sbin/chkconfig --add hdfs-xrootd-healer
 fi
 
 %preun hdfs-xrootd-healer
 if [ $1 = 0 ];then
   /sbin/service hdfs-xrootd-healer stop >/dev/null 2>&1 || :
-  /sbin/chkconfig --del hdfs-xrootd-fallback
+  /sbin/chkconfig --del hdfs-xrootd-healer
 fi
 
 %files hdfs-xrootd-fallback
