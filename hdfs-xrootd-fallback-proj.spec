@@ -1,3 +1,7 @@
+%define lib_hadoop_dirname /usr/lib
+%define lib_hadoop %{lib_hadoop_dirname}/hadoop
+%define lib_hdfs %{lib_hadoop_dirname}/hadoop-hdfs
+
 Name:           hdfs-xrootd-fallback-proj
 Version:        1.0.0
 Release:        4%{?dist}
@@ -47,8 +51,8 @@ the repaired blocks once they are fully cached.
 
 %build
 %configure \
-HADOOP_HOME=/usr/lib/hadoop \
-HADOOP_HDFS_HOME=/usr/lib/hadoop-hdfs \
+HADOOP_HOME=%{lib_hadoop} \
+HADOOP_HDFS_HOME=%{lib_hdfs} \
 CPPFLAGS=-I/usr/include/xrootd
 
 make %{?_smp_mflags}
@@ -99,7 +103,7 @@ fi
 %defattr(-,root,root,-)
 %doc hdfs-xrootd-fallback/README
 %doc hdfs-xrootd-fallback/LICENSE
-/usr/lib/hadoop/client/hdfs-xrootd-fallback-%{version}.jar
+%{lib_hadoop}/client/hdfs-xrootd-fallback-%{version}.jar
 %{_libdir}/libXrdBlockFetcher.so*
 %config(noreplace) %{_sysconfdir}/hadoop/conf.osg/xfbfs-site.xml
 
