@@ -22,7 +22,7 @@ Group:          System Environment/Daemons
 Requires: pcre
 Requires: xrootd-client-libs >= 4.0.4
 Requires: hadoop-hdfs >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
-Requires: osg-se-hadoop-client
+Requires: hadoop-hdfs-fuse >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
 
 %description -n hdfs-xrootd-fallback
 Hadoop extension to interface with xrootd for block healing
@@ -31,7 +31,6 @@ Hadoop extension to interface with xrootd for block healing
 Summary:        Hadoop extension to interface with xrootd for block healing
 Group:          System Environment/Daemons
 Requires: hadoop-hdfs >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
-Requires: osg-se-hadoop-client
 
 %description -n hdfs-xrootd-healer
 Hadoop extension to interface with xrootd for block healing
