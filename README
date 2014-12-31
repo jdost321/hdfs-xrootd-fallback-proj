@@ -1,2 +1,7 @@
 hdfs-xrootd-fallback-proj
 =========================
+The HDFS XRootD Fallback system enables relaxed local Hadoop replication by
+utilizing global redundancy provided by the XRootD Federation. This system
+provides exception handling at the block level, a cache to locally store
+repaired blocks retrieved from the Federation, and the ability to re-inject the
+repaired blocks back into Hadoop.

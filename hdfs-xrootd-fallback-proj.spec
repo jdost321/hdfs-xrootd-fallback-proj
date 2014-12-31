@@ -1,7 +1,7 @@
 Name:           hdfs-xrootd-fallback-proj
 Version:        1.0.0
 Release:        4%{?dist}
-Summary:        Hadoop extension to interface with xrootd for block healing
+Summary:        Tools to enable relaxed local Hadoop replication
 Group:          System Environment/Daemons
 License:        BSD
 URL:            http://www.gled.org/cgi-bin/twiki/view/Main/HdfsXrootd
@@ -14,10 +14,14 @@ BuildRequires: xrootd-client-devel >= 4.0.4
 BuildRequires: hadoop-hdfs >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
 
 %description
-Hadoop extension to interface with xrootd for block healing
+The HDFS XRootD Fallback system enables relaxed local Hadoop replication by
+utilizing global redundancy provided by the XRootD Federation. This system
+provides exception handling at the block level, a cache to locally store
+repaired blocks retrieved from the Federation, and the ability to re-inject the
+repaired blocks back into Hadoop.
 
 %package -n hdfs-xrootd-fallback
-Summary:        Hadoop extension to interface with xrootd for block healing
+Summary:        Hadoop extension to interface with XRootD for block-level read error prevention
 Group:          System Environment/Daemons
 Requires: pcre
 Requires: xrootd-client-libs >= 4.0.4
@@ -25,15 +29,18 @@ Requires: hadoop-hdfs >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
 Requires: hadoop-hdfs-fuse >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
 
 %description -n hdfs-xrootd-fallback
-Hadoop extension to interface with xrootd for block healing
+The HDFS XRootD Fallback package is installed on every datanode in the Hadoop
+cluster and accesses blocks on demand via XRootD Cache on failed read exceptions
 
 %package -n hdfs-xrootd-healer
-Summary:        Hadoop extension to interface with xrootd for block healing
+Summary:        Daemon that periodically re-injects cached blocks back into hadoop
 Group:          System Environment/Daemons
 Requires: hadoop-hdfs >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
 
 %description -n hdfs-xrootd-healer
-Hadoop extension to interface with xrootd for block healing
+The HDFS XRootD Healer is installed on the XRootD Cache node and periodically
+compares corrupt blocks in Hadoop with blocks stored in the cache. It re-injects
+the repaired blocks once they are fully cached.
 
 %prep
 %setup -q
@@ -74,7 +81,7 @@ rm -rf %{buildroot}
 getent group hdfshealer >/dev/null || groupadd -r hdfshealer
 getent passwd hdfshealer >/dev/null || \
   useradd -r -g hdfshealer -d %{_sysconfdir}/hdfs-xrootd-healer -s /bin/bash \
-  -c "hdfs-xrootd-healer user" hdfshealer
+  -c "HDFS XRootD Healer User" hdfshealer
 exit 0
 
 %post -n hdfs-xrootd-healer
