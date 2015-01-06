@@ -18,6 +18,7 @@ export HADOOP_LIBEXEC_DIR=@HADOOP_LIBEXEC_DIR@
 . $HADOOP_LIBEXEC_DIR/hadoop-config.sh
 
 export HDFS_XRD_HEALER_CONF=@sysconfdir@/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg
+export DUMP_CINFO_BIN=@libexecdir@/hdfs-xrootd-healer/dumpCinfoRec
 
 # Always respect HADOOP_OPTS and HADOOP_CLIENT_OPTS
 HADOOP_OPTS="$HADOOP_OPTS $HADOOP_CLIENT_OPTS"

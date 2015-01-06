@@ -29,10 +29,9 @@ public class BlockHealer {
   private static boolean PRETEND = false;
   private static final int BUF_SIZE = 8192; // chose same size as java's default for Buffered streams
 
-  private static HashSet<String> getCacheList() throws IOException,InterruptedException {
+  private static HashSet<String> getCacheList(String dumpCinfoBin) throws IOException,InterruptedException {
     HashSet<String> cacheList = new HashSet<String>();
-    // dumpCinfoRec assumed to be in path
-    Process p = Runtime.getRuntime().exec(new String[]{"dumpCinfoRec", "--select", "complete", CONF.get("CACHE_DIR")});
+    Process p = Runtime.getRuntime().exec(new String[]{dumpCinfoBin, "--select", "complete", CONF.get("CACHE_DIR")});
     BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
     String line;
     while ((line = br.readLine()) != null) {
@@ -118,6 +117,11 @@ public class BlockHealer {
   }
 
   public static void main(String[] argv) throws Exception {
+    String dumpCinfoBin = System.getenv("DUMP_CINFO_BIN");
+    if (dumpCinfoBin == null) {
+      System.err.println("DUMP_CINFO_BIN is not set in the environment, exiting.");
+      System.exit(1);
+    }
     String conf_path = System.getenv("HDFS_XRD_HEALER_CONF");
     if (conf_path == null) {
       System.err.println("HDFS_XRD_HEALER_CONF is not set in the environment, exiting.");
@@ -145,7 +149,7 @@ public class BlockHealer {
     String[] namespacePaths = CONF.get("NAMESPACE").split(",");
 
     LOGGER.log(0, "Generating list of cached blocks");
-    HashSet<String> cacheList = getCacheList();
+    HashSet<String> cacheList = getCacheList(dumpCinfoBin);
     if (cacheList.size() == 0) {
       LOGGER.log(0, "No complete blocks found in cache, exiting.");
       System.exit(0);

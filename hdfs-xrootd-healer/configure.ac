@@ -10,6 +10,7 @@ AC_ARG_VAR([HADOOP_HDFS_HOME], [*REQUIRED* directory containing hadoop-hdfs.jar]
 AC_ARG_VAR([HADOOP_LIBEXEC_DIR], [defaults to $(HADOOP_HOME}/libexec, used by healer])
 
 # Checks for programs.
+AC_PROG_CXX
 AC_PROG_INSTALL
 
 AC_CHECK_PROG([HAVE_JAVAC], [javac], [yes]) 

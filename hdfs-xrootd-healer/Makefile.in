@@ -1,3 +1,7 @@
+CXX := @CXX@
+CPPFLAGS := @CPPFLAGS@
+CXXFLAGS := @CXXFLAGS@
+LDFLAGS := @LDFLAGS@
 HADOOP_HOME := @HADOOP_HOME@
 HADOOP_HDFS_HOME := @HADOOP_HDFS_HOME@
 HADOOP_LIBEXEC_DIR := @HADOOP_LIBEXEC_DIR@
@@ -19,13 +23,16 @@ hd_common_jar := $(HADOOP_HOME)/hadoop-common.jar
 hd_annotations_jar := $(HADOOP_HOME)/hadoop-annotations.jar
 hd_hdfs_jar := $(HADOOP_HDFS_HOME)/hadoop-hdfs.jar
 
-all: hdfs-xrootd-healer.jar src/hdfs_xrootd_healer.sh config/hdfs-xrootd-healer.cfg
+all: hdfs-xrootd-healer.jar src/hdfs_xrootd_healer.sh config/hdfs-xrootd-healer.cfg dumpCinfoRec
 
 clean:
-	rm -f src/edu/ucsd/t2/hdfs/xrootd/healer/*.class *.jar src/hdfs_xrootd_healer.sh config/*.cfg hdfs-xrootd-healer-$(vers).tar.gz
+	rm -f src/edu/ucsd/t2/hdfs/xrootd/healer/*.class *.jar src/hdfs_xrootd_healer.sh config/*.cfg hdfs-xrootd-healer-$(vers).tar.gz dumpCinfoRec
 
 distclean: clean
 	rm -f Makefile config.status config.log
+
+dumpCinfoRec: src/dumpCinfoRec.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 
 hdfs-xrootd-healer.jar: src/edu/ucsd/t2/hdfs/xrootd/healer/BlockHealer.class \
 src/edu/ucsd/t2/hdfs/xrootd/healer/Block.class \
@@ -48,6 +55,7 @@ src/square_pusher.sh
 src/hdfs_xrootd_healer.sh: src/hdfs_xrootd_healer.sh.in 
 	sed -e 's|[@]libdir@|$(libdir)|' \
 	-e 's|[@]sysconfdir@|$(sysconfdir)|' \
+	-e 's|[@]libexecdir@|$(libexecdir)|' \
 	-e 's|[@]HADOOP_LIBEXEC_DIR@|$(HADOOP_LIBEXEC_DIR)|' $< > $@
 
 config/hdfs-xrootd-healer.cfg: config/hdfs-xrootd-healer.cfg.in 
@@ -58,6 +66,7 @@ install: all
 	$(INSTALL) -m 644 hdfs-xrootd-healer.jar $(DESTDIR)$(libdir)/hdfs-xrootd-healer
 	mkdir -p $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
 	$(INSTALL) src/hdfs_xrootd_healer.sh $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
+	$(INSTALL) dumpCinfoRec $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
 	mkdir -p $(DESTDIR)$(datadir)/hdfs-xrootd-healer
 	$(INSTALL) -m 644 config/hdfs-xrootd-healer.cfg config/hdfs-xrootd-healer.cron \
 	config/hdfs-xrootd-healer.init config/hdfs-xrootd-healer.logrotate \
@@ -73,7 +82,7 @@ dist:
 	rsync -avR autom4te.cache \
 	config/{hdfs-xrootd-healer.cfg.in,hdfs-xrootd-healer.cron,hdfs-xrootd-healer.init,hdfs-xrootd-healer.logrotate} \
 	configure configure.ac install-sh Makefile.in \
-	src/{hdfs_xrootd_healer.sh.in,square_pusher.sh} \
+	src/{hdfs_xrootd_healer.sh.in,square_pusher.sh,dumpCinfoRec.cc} \
 	src/edu/ucsd/t2/hdfs/xrootd/healer/*.java hdfs-xrootd-healer-$(vers)/
 	tar -czf hdfs-xrootd-healer-$(vers).tar.gz hdfs-xrootd-healer-$(vers)
 	rm -rf hdfs-xrootd-healer-$(vers)
