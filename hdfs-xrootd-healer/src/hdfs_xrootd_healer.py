@@ -16,6 +16,7 @@ FUSE_MOUNT = '/hadoop'
 CKSUM_DIR = '/cksums'
 # 128 mb
 BLOCK_SIZE = 134217728
+HDFS_TMP_DIR = '/hdfshealer'
 
 def build_cache_set(path, cached_files):
   if os.path.isdir(path):
@@ -70,16 +71,37 @@ for f in broken_files:
 
     new_md5 = md5.new()
 
+    orig_filepath = '%s%s' % (FUSE_MOUNT, f)
+    f_base = os.path.basename(f)
+    tmp_filepath = os.path.join('%s%s' % (FUSE_MOUNT, HDFS_TMP_DIR), f_base)
     try:
-      fin = open('%s%s' % (FUSE_MOUNT, f), 'rb')
+      fin = open(orig_filepath, 'rb')
+      print tmp_filepath
+      fout = open(tmp_filepath, 'wb')
 
       while True:
         bytes = fin.read(BLOCK_SIZE)
         if bytes == '':
           break
         new_md5.update(bytes)
+        fout.write(bytes)
 
     finally:
       fin.close()
+      fout.close()
 
     print "new md5: %s" % new_md5.hexdigest()
+    if orig_md5 != new_md5.hexdigest():
+      print "Checksums don't match, skipping: %s" % f
+      print "    original: %s" % orig_md5
+      print "  calculated: %s" % new_md5.hexdigest()
+      print "rm %s" % tmp_filepath
+      os.unlink(tmp_filepath)
+      continue
+
+    print "mv %s %s" % (orig_filepath, "%s.bak" % orig_filepath)
+    os.rename(orig_filepath, "%s.bak" % orig_filepath)
+    print "mv %s %s" % (tmp_filepath, orig_filepath)
+    os.rename(tmp_filepath, orig_filepath)
+    print "rm %s" % "%s.bak" % orig_filepath
+    #os.unlink("%s.bak" % orig_filepath)
