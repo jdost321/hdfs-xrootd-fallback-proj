@@ -72,6 +72,9 @@ for f in broken_files:
     new_md5 = md5.new()
 
     orig_filepath = '%s%s' % (FUSE_MOUNT, f)
+
+    orig_stat = os.stat(orig_filepath)
+
     f_base = os.path.basename(f)
     tmp_filepath = os.path.join('%s%s' % (FUSE_MOUNT, HDFS_TMP_DIR), f_base)
     try:
@@ -98,6 +101,9 @@ for f in broken_files:
       print "rm %s" % tmp_filepath
       os.unlink(tmp_filepath)
       continue
+
+    os.chown(tmp_filepath, orig_stat.st_uid, orig_stat.st_gid)
+    os.chmod(tmp_filepath, orig_stat.st_mode)
 
     print "mv %s %s" % (orig_filepath, "%s.bak" % orig_filepath)
     os.rename(orig_filepath, "%s.bak" % orig_filepath)
