@@ -4,8 +4,8 @@ import sys
 import os
 import re
 import md5
-
 import subprocess
+import time
 
 '''NAMESPACE = '/cms/phedex/store/relval'
 if len(sys.argv) > 1:
@@ -19,6 +19,13 @@ BLOCK_SIZE = 134217728
 HDFS_TMP_DIR = '/hdfshealer'
 '''
 
+LOG_LEVEL = 0
+LOG_OUT = sys.stdout
+
+def log(level, msg):
+  if level <= LOG_LEVEL:
+    LOG_OUT.write("%s %s\n" % (time.strftime("%b %d %H:%M:%S", time.localtime()), msg))
+  
 def parse_conf(path):
   d = {
     'NAMESPACE': '',
@@ -49,6 +56,7 @@ def parse_conf(path):
   finally:
     f.close()
   return d
+
 
 if len(sys.argv) > 1:
   CONF_PATH = sys.argv[1]
@@ -102,7 +110,7 @@ for f in broken_files:
       for line in fin:
         if line.startswith('MD5:'):
           orig_md5 = line.split(':')[1].strip()
-          print "%s: %s" % (f, orig_md5)
+          log(0, "%s: %s" % (f, orig_md5))
 
     finally:
       fin.close()
@@ -117,7 +125,7 @@ for f in broken_files:
     tmp_filepath = os.path.join('%s%s' % (CONF['FUSE_MOUNT'], CONF['HDFS_TMP_DIR']), f_base)
 
     fin = open(orig_filepath, 'rb')
-    print tmp_filepath
+    log(0, tmp_filepath)
     fout = open(tmp_filepath, 'wb')
     try:
       while True:
@@ -131,21 +139,21 @@ for f in broken_files:
       fin.close()
       fout.close()
 
-    print "new md5: %s" % new_md5.hexdigest()
+    log(0, "new md5: %s" % new_md5.hexdigest())
     if orig_md5 != new_md5.hexdigest():
-      print "Checksums don't match, skipping: %s" % f
-      print "    original: %s" % orig_md5
-      print "  calculated: %s" % new_md5.hexdigest()
-      print "rm %s" % tmp_filepath
+      log(0, "Checksums don't match, skipping: %s" % f)
+      LOG_OUT.write("    original: %s\n" % orig_md5)
+      LOG_OUT.write("  calculated: %s\n" % new_md5.hexdigest())
+      log(0, "rm %s" % tmp_filepath)
       os.unlink(tmp_filepath)
       continue
 
     os.chown(tmp_filepath, orig_stat.st_uid, orig_stat.st_gid)
     os.chmod(tmp_filepath, orig_stat.st_mode)
 
-    print "mv %s %s" % (orig_filepath, "%s.bak" % orig_filepath)
+    log(0, "mv %s %s" % (orig_filepath, "%s.bak" % orig_filepath))
     os.rename(orig_filepath, "%s.bak" % orig_filepath)
-    print "mv %s %s" % (tmp_filepath, orig_filepath)
+    log(0, "mv %s %s" % (tmp_filepath, orig_filepath))
     os.rename(tmp_filepath, orig_filepath)
-    print "rm %s" % "%s.bak" % orig_filepath
+    log(0, "rm %s" % "%s.bak" % orig_filepath)
     #os.unlink("%s.bak" % orig_filepath)
