@@ -19,9 +19,6 @@ BLOCK_SIZE = 134217728
 HDFS_TMP_DIR = '/hdfshealer'
 '''
 
-LOG_LEVEL = 0
-LOG_OUT = sys.stdout
-
 def log(level, msg):
   if level <= LOG_LEVEL:
     LOG_OUT.write("%s %s\n" % (time.strftime("%b %d %H:%M:%S", time.localtime()), msg))
@@ -57,12 +54,6 @@ def parse_conf(path):
     f.close()
   return d
 
-
-if len(sys.argv) > 1:
-  CONF_PATH = sys.argv[1]
-
-CONF = parse_conf(CONF_PATH)
-
 def build_cache_set(path, cached_files):
   if os.path.isdir(path):
     files = os.listdir(path)
@@ -74,86 +65,93 @@ def build_cache_set(path, cached_files):
     if path.endswith('.cinfo'):
       cached_files.add(re.sub(r'___[0-9]+_[0-9]+.cinfo$', '', path).replace(CONF['CACHE_DIR'], CONF['LOGICAL_DIR'], 1))
 
-cached_files = set()
-build_cache_set(CONF['NAMESPACE'].replace(CONF['LOGICAL_DIR'], CONF['CACHE_DIR'], 1), cached_files)
+LOG_LEVEL = 0
+LOG_OUT = sys.stdout
+if len(sys.argv) > 1:
+  CONF_PATH = sys.argv[1]
+CONF = parse_conf(CONF_PATH)
 
-# hack to make single namespace work for testing
-# it must be a full cinfo cache path to work
-if not os.path.isdir(CONF['NAMESPACE']):
-  CONF['NAMESPACE'] = re.sub(r'___[0-9]+_[0-9]+.cinfo$', '', CONF['NAMESPACE'])
+if __name__ == '__main__':
+  cached_files = set()
+  build_cache_set(CONF['NAMESPACE'].replace(CONF['LOGICAL_DIR'], CONF['CACHE_DIR'], 1), cached_files)
 
-broken_files = []
+  # hack to make single namespace work for testing
+  # it must be a full cinfo cache path to work
+  if not os.path.isdir(CONF['NAMESPACE']):
+    CONF['NAMESPACE'] = re.sub(r'___[0-9]+_[0-9]+.cinfo$', '', CONF['NAMESPACE'])
 
-p = subprocess.Popen(['hdfs', 'fsck', CONF['NAMESPACE']], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  broken_files = []
 
-for line in p.stdout:
-  #print line,
-  m = re.match(r'([^:]+):.*MISSING.*blocks', line)
-  if m is not None:
-    broken_files.append(m.group(1))
+  p = subprocess.Popen(['hdfs', 'fsck', CONF['NAMESPACE']], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-# just throw out stderr for now
-for line in p.stderr:
-  pass
+  for line in p.stdout:
+    #print line,
+    m = re.match(r'([^:]+):.*MISSING.*blocks', line)
+    if m is not None:
+      broken_files.append(m.group(1))
 
-p.wait()
+  # just throw out stderr for now
+  for line in p.stderr:
+    pass
 
-#for cf in sorted(cached_files):
-#    print cf
+  p.wait()
 
-for f in broken_files:
-  if f in cached_files:
-    orig_md5_path = '%s%s%s' % (CONF['FUSE_MOUNT'], CONF['CKSUM_DIR'], f)
+  #for cf in sorted(cached_files):
+  #    print cf
 
-    fin = open(orig_md5_path) 
-    try:
-      for line in fin:
-        if line.startswith('MD5:'):
-          orig_md5 = line.split(':')[1].strip()
-          log(0, "%s: %s" % (f, orig_md5))
+  for f in broken_files:
+    if f in cached_files:
+      orig_md5_path = '%s%s%s' % (CONF['FUSE_MOUNT'], CONF['CKSUM_DIR'], f)
 
-    finally:
-      fin.close()
+      fin = open(orig_md5_path) 
+      try:
+        for line in fin:
+          if line.startswith('MD5:'):
+            orig_md5 = line.split(':')[1].strip()
+            log(0, "%s: %s" % (f, orig_md5))
 
-    new_md5 = md5.new()
+      finally:
+        fin.close()
 
-    orig_filepath = '%s%s' % (CONF['FUSE_MOUNT'], f)
+      new_md5 = md5.new()
 
-    orig_stat = os.stat(orig_filepath)
+      orig_filepath = '%s%s' % (CONF['FUSE_MOUNT'], f)
 
-    f_base = os.path.basename(f)
-    tmp_filepath = os.path.join('%s%s' % (CONF['FUSE_MOUNT'], CONF['HDFS_TMP_DIR']), f_base)
+      orig_stat = os.stat(orig_filepath)
 
-    fin = open(orig_filepath, 'rb')
-    log(0, tmp_filepath)
-    fout = open(tmp_filepath, 'wb')
-    try:
-      while True:
-        bytes = fin.read(CONF['BLOCK_SIZE'])
-        if bytes == '':
-          break
-        new_md5.update(bytes)
-        fout.write(bytes)
+      f_base = os.path.basename(f)
+      tmp_filepath = os.path.join('%s%s' % (CONF['FUSE_MOUNT'], CONF['HDFS_TMP_DIR']), f_base)
 
-    finally:
-      fin.close()
-      fout.close()
+      fin = open(orig_filepath, 'rb')
+      log(0, tmp_filepath)
+      fout = open(tmp_filepath, 'wb')
+      try:
+        while True:
+          bytes = fin.read(CONF['BLOCK_SIZE'])
+          if bytes == '':
+            break
+          new_md5.update(bytes)
+          fout.write(bytes)
 
-    log(0, "new md5: %s" % new_md5.hexdigest())
-    if orig_md5 != new_md5.hexdigest():
-      log(0, "Checksums don't match, skipping: %s" % f)
-      LOG_OUT.write("    original: %s\n" % orig_md5)
-      LOG_OUT.write("  calculated: %s\n" % new_md5.hexdigest())
-      log(0, "rm %s" % tmp_filepath)
-      os.unlink(tmp_filepath)
-      continue
+      finally:
+        fin.close()
+        fout.close()
 
-    os.chown(tmp_filepath, orig_stat.st_uid, orig_stat.st_gid)
-    os.chmod(tmp_filepath, orig_stat.st_mode)
+      log(0, "new md5: %s" % new_md5.hexdigest())
+      if orig_md5 != new_md5.hexdigest():
+        log(0, "Checksums don't match, skipping: %s" % f)
+        LOG_OUT.write("    original: %s\n" % orig_md5)
+        LOG_OUT.write("  calculated: %s\n" % new_md5.hexdigest())
+        log(0, "rm %s" % tmp_filepath)
+        os.unlink(tmp_filepath)
+        continue
 
-    log(0, "mv %s %s" % (orig_filepath, "%s.bak" % orig_filepath))
-    os.rename(orig_filepath, "%s.bak" % orig_filepath)
-    log(0, "mv %s %s" % (tmp_filepath, orig_filepath))
-    os.rename(tmp_filepath, orig_filepath)
-    log(0, "rm %s" % "%s.bak" % orig_filepath)
-    #os.unlink("%s.bak" % orig_filepath)
+      os.chown(tmp_filepath, orig_stat.st_uid, orig_stat.st_gid)
+      os.chmod(tmp_filepath, orig_stat.st_mode)
+
+      log(0, "mv %s %s" % (orig_filepath, "%s.bak" % orig_filepath))
+      os.rename(orig_filepath, "%s.bak" % orig_filepath)
+      log(0, "mv %s %s" % (tmp_filepath, orig_filepath))
+      os.rename(tmp_filepath, orig_filepath)
+      log(0, "rm %s" % "%s.bak" % orig_filepath)
+      #os.unlink("%s.bak" % orig_filepath)
