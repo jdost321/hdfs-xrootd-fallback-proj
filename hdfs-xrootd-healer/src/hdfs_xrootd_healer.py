@@ -72,35 +72,58 @@ if len(sys.argv) > 1:
 CONF = parse_conf(CONF_PATH)
 
 if __name__ == '__main__':
-  cached_files = set()
-  build_cache_set(CONF['NAMESPACE'].replace(CONF['LOGICAL_DIR'], CONF['CACHE_DIR'], 1), cached_files)
+  broken_files_tot = 0
+  healed_files_tot = 0
 
-  # hack to make single namespace work for testing
-  # it must be a full cinfo cache path to work
-  if not os.path.isdir(CONF['NAMESPACE']):
-    CONF['NAMESPACE'] = re.sub(r'___[0-9]+_[0-9]+.cinfo$', '', CONF['NAMESPACE'])
+  for ns_path in CONF['NAMESPACE'].split(','):
+    log(0, "Processing namespace: %s" % ns_path)
+    log(0, "Generating list of cached files")
+    cached_files = set()
+    build_cache_set(ns_path.replace(CONF['LOGICAL_DIR'], CONF['CACHE_DIR'], 1), cached_files)
 
-  broken_files = []
+    # hack to make single namespace work for testing
+    # it must be a full cinfo cache path to work
+    if not os.path.isdir(ns_path):
+      ns_path = re.sub(r'___[0-9]+_[0-9]+.cinfo$', '', ns_path)
 
-  p = subprocess.Popen(['hdfs', 'fsck', CONF['NAMESPACE']], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    broken_files = []
 
-  for line in p.stdout:
-    #print line,
-    m = re.match(r'([^:]+):.*MISSING.*blocks', line)
-    if m is not None:
-      broken_files.append(m.group(1))
+    log(0, "Searching namespace for corrupt files")
+    p = subprocess.Popen(['hdfs', 'fsck', ns_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-  # just throw out stderr for now
-  for line in p.stderr:
-    pass
+    for line in p.stdout:
+      #print line,
+      m = re.match(r'([^:]+):.*MISSING.*blocks', line)
+      if m is not None:
+        broken_files.append(m.group(1))
 
-  p.wait()
+    # just throw out stderr for now
+    for line in p.stderr:
+      pass
 
-  #for cf in sorted(cached_files):
-  #    print cf
+    p.wait()
 
-  for f in broken_files:
-    if f in cached_files:
+    #for cf in sorted(cached_files):
+    #    print cf
+
+    if len(broken_files) == 0:
+      log(0, "No corrupt files found")
+      continue
+
+    broken_files_tot += len(broken_files)
+
+    # be optimistic, subtract whenever we fail to heal
+    healed_files = len(broken_files)
+
+    log(0, "Corrupt Files: %s" % len(broken_files))
+    log(0, "Begin healing files")
+
+    for f in broken_files:
+      if not f in cached_files:
+        healed_files -= 1
+        continue
+
+      log(0, f)
       orig_md5_path = '%s%s%s' % (CONF['FUSE_MOUNT'], CONF['CKSUM_DIR'], f)
 
       fin = open(orig_md5_path) 
@@ -108,7 +131,7 @@ if __name__ == '__main__':
         for line in fin:
           if line.startswith('MD5:'):
             orig_md5 = line.split(':')[1].strip()
-            log(0, "%s: %s" % (f, orig_md5))
+            #log(0, "%s: %s" % (f, orig_md5))
 
       finally:
         fin.close()
@@ -123,7 +146,7 @@ if __name__ == '__main__':
       tmp_filepath = os.path.join('%s%s' % (CONF['FUSE_MOUNT'], CONF['HDFS_TMP_DIR']), f_base)
 
       fin = open(orig_filepath, 'rb')
-      log(0, tmp_filepath)
+      #log(0, tmp_filepath)
       fout = open(tmp_filepath, 'wb')
       try:
         while True:
@@ -137,13 +160,14 @@ if __name__ == '__main__':
         fin.close()
         fout.close()
 
-      log(0, "new md5: %s" % new_md5.hexdigest())
+      #log(0, "new md5: %s" % new_md5.hexdigest())
       if orig_md5 != new_md5.hexdigest():
         log(0, "Checksums don't match, skipping: %s" % f)
         LOG_OUT.write("    original: %s\n" % orig_md5)
         LOG_OUT.write("  calculated: %s\n" % new_md5.hexdigest())
         log(0, "rm %s" % tmp_filepath)
         os.unlink(tmp_filepath)
+        healed_files -= 1
         continue
 
       os.chown(tmp_filepath, orig_stat.st_uid, orig_stat.st_gid)
@@ -155,3 +179,10 @@ if __name__ == '__main__':
       os.rename(tmp_filepath, orig_filepath)
       log(0, "rm %s" % "%s.bak" % orig_filepath)
       #os.unlink("%s.bak" % orig_filepath)
+
+    healed_files_tot += healed_files
+    log(0, "Corrupt Files: %s" % len(broken_files))
+    log(0, "Healed Files: %s" % healed_files)
+
+  log(0, "Total Corrupt Files: %s" % broken_files_tot)
+  log(0, "Total Healed Files: %s" % healed_files_tot)
