@@ -65,6 +65,25 @@ def build_cache_set(path, cached_files):
     if path.endswith('.cinfo'):
       cached_files.add(re.sub(r'___[0-9]+_[0-9]+.cinfo$', '', path).replace(CONF['CACHE_DIR'], CONF['LOGICAL_DIR'], 1))
 
+def get_broken_files(path):
+  broken_files = []
+
+  p = subprocess.Popen(['hdfs', 'fsck', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+  for line in p.stdout:
+    #print line,
+    m = re.match(r'([^:]+):.*MISSING.*blocks', line)
+    if m is not None:
+      broken_files.append(m.group(1))
+
+  # just throw out stderr for now
+  for line in p.stderr:
+    pass
+
+  p.wait()
+
+  return broken_files
+
 LOG_LEVEL = 0
 LOG_OUT = sys.stdout
 if len(sys.argv) > 1:
@@ -77,45 +96,31 @@ if __name__ == '__main__':
 
   for ns_path in CONF['NAMESPACE'].split(','):
     log(0, "Processing namespace: %s" % ns_path)
-    log(0, "Generating list of cached files")
-    cached_files = set()
-    build_cache_set(ns_path.replace(CONF['LOGICAL_DIR'], CONF['CACHE_DIR'], 1), cached_files)
-
-    # hack to make single namespace work for testing
-    # it must be a full cinfo cache path to work
-    if not os.path.isdir(ns_path):
-      ns_path = re.sub(r'___[0-9]+_[0-9]+.cinfo$', '', ns_path)
 
     broken_files = []
 
     log(0, "Searching namespace for corrupt files")
-    p = subprocess.Popen(['hdfs', 'fsck', ns_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    for line in p.stdout:
-      #print line,
-      m = re.match(r'([^:]+):.*MISSING.*blocks', line)
-      if m is not None:
-        broken_files.append(m.group(1))
-
-    # just throw out stderr for now
-    for line in p.stderr:
-      pass
-
-    p.wait()
-
-    #for cf in sorted(cached_files):
-    #    print cf
+    broken_files = get_broken_files(ns_path)
 
     if len(broken_files) == 0:
       log(0, "No corrupt files found")
       continue
 
     broken_files_tot += len(broken_files)
+    log(0, "Corrupt Files: %s" % len(broken_files))
+
+    log(0, "Generating list of cached files")
+    cached_files = set()
+    build_cache_set(ns_path.replace(CONF['LOGICAL_DIR'], CONF['CACHE_DIR'], 1), cached_files)
+    if len(cached_files) == 0:
+      log(0, "No cached files found")
+      continue
+
+    log(0, "Cached Files: %s" % len(cached_files))
 
     # be optimistic, subtract whenever we fail to heal
     healed_files = len(broken_files)
 
-    log(0, "Corrupt Files: %s" % len(broken_files))
     log(0, "Begin healing files")
 
     for f in broken_files:
@@ -181,7 +186,6 @@ if __name__ == '__main__':
       #os.unlink("%s.bak" % orig_filepath)
 
     healed_files_tot += healed_files
-    log(0, "Corrupt Files: %s" % len(broken_files))
     log(0, "Healed Files: %s" % healed_files)
 
   log(0, "Total Corrupt Files: %s" % broken_files_tot)
