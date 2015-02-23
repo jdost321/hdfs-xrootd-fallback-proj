@@ -92,7 +92,8 @@ CONF = parse_conf(CONF_PATH)
 
 if __name__ == '__main__':
   broken_files_tot = 0
-  healed_files_tot = 0
+  repairable_files_tot = 0
+  repaired_files_tot = 0
 
   for ns_path in CONF['NAMESPACE'].split(','):
     log(0, "Processing namespace: %s" % ns_path)
@@ -118,15 +119,18 @@ if __name__ == '__main__':
 
     log(0, "Cached Files: %s" % len(cached_files))
 
-    # be optimistic, subtract whenever we fail to heal
-    healed_files = len(broken_files)
+    repairable_files = 0
+    repaired_files = 0
 
-    log(0, "Begin healing files")
+    log(0, "Begin repairing files")
 
     for f in broken_files:
       if not f in cached_files:
-        healed_files -= 1
         continue
+
+      repairable_files += 1
+      # be optimistic, subtract whenever we fail to heal
+      repaired_files += 1
 
       log(0, f)
       orig_md5_path = '%s%s%s' % (CONF['FUSE_MOUNT'], CONF['CKSUM_DIR'], f)
@@ -172,7 +176,7 @@ if __name__ == '__main__':
         LOG_OUT.write("  calculated: %s\n" % new_md5.hexdigest())
         log(0, "rm %s" % tmp_filepath)
         os.unlink(tmp_filepath)
-        healed_files -= 1
+        repaired_files -= 1
         continue
 
       os.chown(tmp_filepath, orig_stat.st_uid, orig_stat.st_gid)
@@ -185,8 +189,11 @@ if __name__ == '__main__':
       log(0, "rm %s" % "%s.bak" % orig_filepath)
       #os.unlink("%s.bak" % orig_filepath)
 
-    healed_files_tot += healed_files
-    log(0, "Healed Files: %s" % healed_files)
+    repairable_files_tot += repairable_files
+    repaired_files_tot += repaired_files
+    log(0, "Repairable Files: %s" % repairable_files)
+    log(0, "Repaired Files: %s" % repaired_files)
 
   log(0, "Total Corrupt Files: %s" % broken_files_tot)
-  log(0, "Total Healed Files: %s" % healed_files_tot)
+  log(0, "Total Repairable Files: %s" % repairable_files_tot)
+  log(0, "Total Repaired Files: %s" % repaired_files_tot)
