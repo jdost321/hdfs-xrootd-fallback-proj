@@ -98,8 +98,6 @@ if __name__ == '__main__':
   for ns_path in CONF['NAMESPACE'].split(','):
     log(0, "Processing namespace: %s" % ns_path)
 
-    broken_files = []
-
     log(0, "Searching namespace for corrupt files")
     broken_files = get_broken_files(ns_path)
 
@@ -135,15 +133,21 @@ if __name__ == '__main__':
       log(0, f)
       orig_md5_path = '%s%s%s' % (CONF['FUSE_MOUNT'], CONF['CKSUM_DIR'], f)
 
-      fin = open(orig_md5_path) 
+      fin = None
       try:
+        fin = open(orig_md5_path) 
         for line in fin:
           if line.startswith('MD5:'):
             orig_md5 = line.split(':')[1].strip()
-            #log(0, "%s: %s" % (f, orig_md5))
 
+      except IOError, e:
+        repaired_files -= 1
+        log(0, "Unable to parse original checksum, skipping: %s" % orig_md5_path)
+        LOG_OUT.write("  %s\n" % e)
+        continue
       finally:
-        fin.close()
+        if fin is not None:
+          fin.close()
 
       new_md5 = md5.new()
 
@@ -154,20 +158,28 @@ if __name__ == '__main__':
       f_base = os.path.basename(f)
       tmp_filepath = os.path.join('%s%s' % (CONF['FUSE_MOUNT'], CONF['HDFS_TMP_DIR']), f_base)
 
-      fin = open(orig_filepath, 'rb')
-      #log(0, tmp_filepath)
-      fout = open(tmp_filepath, 'wb')
+      fin = None
+      fout = None
       try:
+        fin = open(orig_filepath, 'rb')
+        fout = open(tmp_filepath, 'wb')
         while True:
           bytes = fin.read(CONF['BLOCK_SIZE'])
           if bytes == '':
             break
           new_md5.update(bytes)
           fout.write(bytes)
+      except IOError, e:
+        repaired_files -= 1
+        log(0, "Error occurred repairing file, skipping: %s" % f)
+        LOG_OUT.write("  %s\n" % e)
+        continue
 
       finally:
-        fin.close()
-        fout.close()
+        if fin != None:
+          fin.close()
+        if fout != None:
+          fout.close()
 
       #log(0, "new md5: %s" % new_md5.hexdigest())
       if orig_md5 != new_md5.hexdigest():
