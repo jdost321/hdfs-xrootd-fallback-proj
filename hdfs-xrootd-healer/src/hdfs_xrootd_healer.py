@@ -88,8 +88,13 @@ LOG_OUT = sys.stdout
 if len(sys.argv) > 1:
   CONF_PATH = sys.argv[1]
 CONF = parse_conf(CONF_PATH)
+PRETENT = False
 
 if __name__ == '__main__':
+  for a in sys.argv:
+    if a == '-pretend':
+      PRETEND = True
+
   broken_files_tot = 0
   repairable_files_tot = 0
   repaired_files_tot = 0
@@ -203,21 +208,26 @@ if __name__ == '__main__':
         LOG_OUT.write("  %s\n" % e)
         continue
 
-      try:
-        os.rename(orig_filepath, "%s.bak" % orig_filepath)
-        os.rename(tmp_filepath, orig_filepath)
-      except OSError, e:
-        repaired_files -= 1
-        log(0, "ERROR: Failed to replace repaired file: %s" % f)
-        LOG_OUT.write("  %s\n" % e)
-        continue
+      if PRETEND:
+        try:
+          os.unlink(tmp_filepath)
+        except OSError:
+          pass
+      else:
+        try:
+          os.rename(orig_filepath, "%s.bak" % orig_filepath)
+          os.rename(tmp_filepath, orig_filepath)
+        except OSError, e:
+          repaired_files -= 1
+          log(0, "ERROR: Failed to replace repaired file: %s" % f)
+          LOG_OUT.write("  %s\n" % e)
+          continue
 
-      '''try:
-        os.unlink("%s.bak" % orig_filepath)
-      except OSError, e:
-        log(0, "WARN: Unable to remove file: %s.bak" % orig_filepath)
-        LOG_OUT.write("  %s\n" % e)
-      '''
+        try:
+          os.unlink("%s.bak" % orig_filepath)
+        except OSError, e:
+          log(0, "WARN: Unable to remove file: %s.bak" % orig_filepath)
+          LOG_OUT.write("  %s\n" % e)
 
     repairable_files_tot += repairable_files
     repaired_files_tot += repaired_files
