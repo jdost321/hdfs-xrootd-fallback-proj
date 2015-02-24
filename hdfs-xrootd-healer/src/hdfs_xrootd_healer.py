@@ -7,18 +7,6 @@ import md5
 import subprocess
 import time
 
-'''NAMESPACE = '/cms/phedex/store/relval'
-if len(sys.argv) > 1:
-  NAMESPACE = sys.argv[1]
-LOGICAL_DIR = '/cms/phedex'
-CACHE_DIR = '/data/hdfs-cache'
-FUSE_MOUNT = '/hadoop'
-CKSUM_DIR = '/cksums'
-# 128 mb
-BLOCK_SIZE = 134217728
-HDFS_TMP_DIR = '/hdfshealer'
-'''
-
 def log(level, msg):
   if level <= LOG_LEVEL:
     LOG_OUT.write("%s %s\n" % (time.strftime("%b %d %H:%M:%S", time.localtime()), msg))
@@ -27,11 +15,12 @@ def parse_conf(path):
   d = {
     'NAMESPACE': '',
     'LOGICAL_DIR': '',
-    'CACHE_DIR': '/cksums',
+    'CACHE_DIR': '',
     'FUSE_MOUNT': '',
-    'CKSUM_DIR': '',
+    'CKSUM_DIR': '/cksums',
     'HDFS_TMP_DIR': '',
-    'BLOCK_SIZE': 134217728
+    'BLOCK_SIZE': 134217728,
+    'LOG': '/var/log/hdfs-xrootd-healer/hdfs-xrootd-healer.log'
   }
 
   line_num = 1
@@ -85,15 +74,20 @@ def get_broken_files(path):
 
 LOG_LEVEL = 0
 LOG_OUT = sys.stdout
-if len(sys.argv) > 1:
-  CONF_PATH = sys.argv[1]
+CONF_PATH = '/etc/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg'
 CONF = parse_conf(CONF_PATH)
-PRETENT = False
+PRETEND = False
+DEBUG = False
 
 if __name__ == '__main__':
   for a in sys.argv:
     if a == '-pretend':
       PRETEND = True
+    elif a == '-debug':
+      DEBUG = True
+
+  if not DEBUG:
+    LOG_OUT = open(CONF['LOG'], 'a', 1)
 
   broken_files_tot = 0
   repairable_files_tot = 0
@@ -237,3 +231,6 @@ if __name__ == '__main__':
   log(0, "Total Corrupt Files: %s" % broken_files_tot)
   log(0, "Total Repairable Files: %s" % repairable_files_tot)
   log(0, "Total Repaired Files: %s" % repaired_files_tot)
+
+  if not DEBUG:
+    LOG_OUT.close()
