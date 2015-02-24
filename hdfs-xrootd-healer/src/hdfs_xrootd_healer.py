@@ -71,7 +71,6 @@ def get_broken_files(path):
   p = subprocess.Popen(['hdfs', 'fsck', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
   for line in p.stdout:
-    #print line,
     m = re.match(r'([^:]+):.*MISSING.*blocks', line)
     if m is not None:
       broken_files.append(m.group(1))
@@ -153,7 +152,6 @@ if __name__ == '__main__':
 
       orig_filepath = '%s%s' % (CONF['FUSE_MOUNT'], f)
 
-      orig_stat = os.stat(orig_filepath)
 
       f_base = os.path.basename(f)
       tmp_filepath = os.path.join('%s%s' % (CONF['FUSE_MOUNT'], CONF['HDFS_TMP_DIR']), f_base)
@@ -181,25 +179,45 @@ if __name__ == '__main__':
         if fout != None:
           fout.close()
 
-      #log(0, "new md5: %s" % new_md5.hexdigest())
       if orig_md5 != new_md5.hexdigest():
         log(0, "Checksums don't match, skipping: %s" % f)
         LOG_OUT.write("    original: %s\n" % orig_md5)
         LOG_OUT.write("  calculated: %s\n" % new_md5.hexdigest())
-        log(0, "rm %s" % tmp_filepath)
-        os.unlink(tmp_filepath)
+        try:
+          os.unlink(tmp_filepath)
+        except OSError, e:
+          log(0, "WARN: Unable to remove file: %s" % tmp_filepath)
+          LOG_OUT.write("  %s\n" % e)
+
         repaired_files -= 1
         continue
 
-      os.chown(tmp_filepath, orig_stat.st_uid, orig_stat.st_gid)
-      os.chmod(tmp_filepath, orig_stat.st_mode)
+      try:
+        orig_stat = os.stat(orig_filepath)
 
-      log(0, "mv %s %s" % (orig_filepath, "%s.bak" % orig_filepath))
-      os.rename(orig_filepath, "%s.bak" % orig_filepath)
-      log(0, "mv %s %s" % (tmp_filepath, orig_filepath))
-      os.rename(tmp_filepath, orig_filepath)
-      log(0, "rm %s" % "%s.bak" % orig_filepath)
-      #os.unlink("%s.bak" % orig_filepath)
+        os.chown(tmp_filepath, orig_stat.st_uid, orig_stat.st_gid)
+        os.chmod(tmp_filepath, orig_stat.st_mode)
+      except OSError, e:
+        repaired_files -= 1
+        log(0, "Error occurred preserving meta info, skipping: %s" % f)
+        LOG_OUT.write("  %s\n" % e)
+        continue
+
+      try:
+        os.rename(orig_filepath, "%s.bak" % orig_filepath)
+        os.rename(tmp_filepath, orig_filepath)
+      except OSError, e:
+        repaired_files -= 1
+        log(0, "Error occurred replacing repaired file: %s" % f)
+        LOG_OUT.write("  %s\n" % e)
+        continue
+
+      '''try:
+        os.unlink("%s.bak" % orig_filepath)
+      except OSError, e:
+        log(0, "WARN: Unable to remove file: %s.bak" % orig_filepath)
+        LOG_OUT.write("  %s\n" % e)
+      '''
 
     repairable_files_tot += repairable_files
     repaired_files_tot += repaired_files
