@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
       except IOError, e:
         repaired_files -= 1
-        log(0, "Unable to parse original checksum, skipping: %s" % orig_md5_path)
+        log(0, "ERROR: Unable to parse original checksum, skipping: %s" % f)
         LOG_OUT.write("  %s\n" % e)
         continue
       finally:
@@ -169,7 +169,7 @@ if __name__ == '__main__':
           fout.write(bytes)
       except IOError, e:
         repaired_files -= 1
-        log(0, "Error occurred repairing file, skipping: %s" % f)
+        log(0, "ERROR: Error occurred repairing file, skipping: %s" % f)
         LOG_OUT.write("  %s\n" % e)
         continue
 
@@ -180,7 +180,7 @@ if __name__ == '__main__':
           fout.close()
 
       if orig_md5 != new_md5.hexdigest():
-        log(0, "Checksums don't match, skipping: %s" % f)
+        log(0, "ERROR: Checksums don't match, skipping: %s" % f)
         LOG_OUT.write("    original: %s\n" % orig_md5)
         LOG_OUT.write("  calculated: %s\n" % new_md5.hexdigest())
         try:
@@ -199,7 +199,7 @@ if __name__ == '__main__':
         os.chmod(tmp_filepath, orig_stat.st_mode)
       except OSError, e:
         repaired_files -= 1
-        log(0, "Error occurred preserving meta info, skipping: %s" % f)
+        log(0, "ERROR: Unable to preserve meta info, skipping: %s" % f)
         LOG_OUT.write("  %s\n" % e)
         continue
 
@@ -208,7 +208,7 @@ if __name__ == '__main__':
         os.rename(tmp_filepath, orig_filepath)
       except OSError, e:
         repaired_files -= 1
-        log(0, "Error occurred replacing repaired file: %s" % f)
+        log(0, "ERROR: Failed to replace repaired file: %s" % f)
         LOG_OUT.write("  %s\n" % e)
         continue
 
