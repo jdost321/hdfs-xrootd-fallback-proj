@@ -3,7 +3,13 @@
 import sys
 import os
 import re
-import md5
+
+# md5 fallback if python <= 2.4
+try:
+  from hashlib import md5
+except ImportError:
+  from md5 import new as md5
+
 import subprocess
 import time
 
@@ -149,7 +155,7 @@ if __name__ == '__main__':
         if fin is not None:
           fin.close()
 
-      new_md5 = md5.new()
+      new_md5 = md5()
 
       orig_filepath = '%s%s' % (CONF['FUSE_MOUNT'], f)
 
