@@ -85,6 +85,8 @@ if __name__ == '__main__':
       PRETEND = True
     elif a == '-debug':
       DEBUG = True
+    else:
+      CONF['NAMESPACE'] = a
 
   if not DEBUG:
     LOG_OUT = open(CONF['LOG'], 'a', 1)
