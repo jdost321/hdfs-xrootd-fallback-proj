@@ -86,7 +86,7 @@ PRETEND = False
 DEBUG = False
 
 if __name__ == '__main__':
-  for a in sys.argv:
+  for a in sys.argv[1:]:
     if a == '-pretend':
       PRETEND = True
     elif a == '-debug':
