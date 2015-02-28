@@ -26,7 +26,7 @@ def parse_conf(path):
     'CKSUM_DIR': '/cksums',
     'HDFS_TMP_DIR': '',
     'BLOCK_SIZE': 134217728,
-    'LOG': '/var/log/hdfs-xrootd-healer/hdfs-xrootd-healer.log'
+    'LOG': '@localstatedir@/log/hdfs-xrootd-healer/hdfs-xrootd-healer.log'
   }
 
   line_num = 1
@@ -80,7 +80,7 @@ def get_broken_files(path):
 
 LOG_LEVEL = 0
 LOG_OUT = sys.stdout
-CONF_PATH = '/etc/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg'
+CONF_PATH = '@sysconfdir@/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg'
 CONF = parse_conf(CONF_PATH)
 PRETEND = False
 DEBUG = False
