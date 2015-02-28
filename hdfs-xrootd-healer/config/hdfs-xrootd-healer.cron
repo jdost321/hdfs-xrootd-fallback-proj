@@ -3,4 +3,4 @@ CRON_LOCK="/var/lock/hdfs-xrootd-healer/hdfs-xrootd-healer-cron"
 HEALER_SCRIPT="/usr/libexec/hdfs-xrootd-healer/hdfs_xrootd_healer.sh"
 SLEEP=43200
 
-0 4 * * * hdfshealer [ ! -f $SYS_LOCK ] || [ -f $CRON_LOCK ] || { touch $CRON_LOCK && $HEALER_SCRIPT && sleep $SLEEP && rm $CRON_LOCK; }
+0 4 * * * hdfshealer [ ! -f $SYS_LOCK ] || [ -f $CRON_LOCK ] || { touch $CRON_LOCK && $HEALER_SCRIPT && sleep $SLEEP;rm $CRON_LOCK; }
