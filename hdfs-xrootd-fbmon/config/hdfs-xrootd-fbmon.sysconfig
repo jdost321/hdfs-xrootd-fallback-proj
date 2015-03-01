@@ -1,0 +1,2 @@
+# udp listener port
+export FBMON_PORT=2021

@@ -14,7 +14,7 @@ exec=/usr/libexec/${prog}/${prog}
 lockfile=/var/lock/subsys/${prog}
 pidfile=/var/run/${prog}/${prog}.pid
 
-retval=0
+[ -e /etc/sysconfig/${prog} ] && . /etc/sysconfig/${prog}
 
 start() {
   [ -x $exec ] || exit 5

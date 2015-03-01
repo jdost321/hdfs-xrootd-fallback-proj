@@ -15,6 +15,7 @@ $DAEMON     = 1;
 $PID_FILE   = "/var/run/hdfs-xrootd-fbmon/hdfs-xrootd-fbmon.pid";
 
 $PORT       = 2021;
+$PORT       = $ENV{'FBMON_PORT'} if $ENV{'FBMON_PORT'} =~ /^\d+$/;
 
 $LOG_FILE   = "/var/log/hdfs-xrootd-fbmon/hdfs-xrootd-fbmon.log";
 $LOG_LEVEL  = 9;
