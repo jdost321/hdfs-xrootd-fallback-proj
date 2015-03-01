@@ -1,2 +1,5 @@
+# hdfs-xrootd-fbmon user
+FBMON_USER=hdfsfbmon
+
 # udp listener port
 export FBMON_PORT=2021
