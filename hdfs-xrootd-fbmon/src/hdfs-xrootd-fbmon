@@ -12,11 +12,11 @@ use Time::HiRes;
 ################################################################################
 
 $DAEMON     = 1;
-$PID_FILE   = "/var/run/xrootd/hdfs-mon-snatcher.pid";
+$PID_FILE   = "/var/run/hdfs-xrootd-fbmon/hdfs-xrootd-fbmon.pid";
 
 $PORT       = 2021;
 
-$LOG_FILE   = "/var/log/xrootd/hdfs-mon-snatcher.log";
+$LOG_FILE   = "/var/log/hdfs-xrootd-fbmon/hdfs-xrootd-fbmon.log";
 $LOG_LEVEL  = 9;
 
 
@@ -35,6 +35,10 @@ sub open_log_file
   {
     open  LOG, ">> $LOG_FILE" or die "Can not open logfile '$LOG_FILE'.";
   }
+
+  my $ph = select(LOG);
+  $| = 1;
+  select($ph);
 }
 
 sub print_log($@)

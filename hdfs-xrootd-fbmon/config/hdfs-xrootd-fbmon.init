@@ -1,0 +1,79 @@
+#!/bin/sh
+#
+# hdfs-xrootd-fbmon Collects and logs udp messages from datanode fallbacks
+#
+# chkconfig:	- 80 30
+# description:  Collects and logs udp messages from datanode fallbacks
+#
+
+# source function library
+. /etc/rc.d/init.d/functions
+
+prog=hdfs-xrootd-fbmon
+exec=/usr/libexec/${prog}/${prog}
+lockfile=/var/lock/subsys/${prog}
+pidfile=/var/run/${prog}/${prog}.pid
+
+retval=0
+
+start() {
+  [ -x $exec ] || exit 5
+  echo -n $"Starting ${prog}: "
+  daemon $exec
+  retval=$?
+  [ $retval -eq 0 ] && touch $lockfile
+  echo
+  return $retval
+}
+
+stop() {
+  echo -n $"Stopping ${prog}: "
+  killproc $prog
+  retval=$?
+  echo
+  [ $retval -eq 0 ] && { rm -f $lockfile;rm -f $pidfile; }
+  return $retval
+}
+
+rh_status() {
+  status -p $pidfile $prog
+}
+
+rh_status_q() {
+  rh_status >/dev/null 2>&1
+}
+
+restart() {
+  stop
+  start
+}
+
+case "$1" in
+  start)
+    rh_status_q && exit 0
+    start
+    ;;
+  stop) 
+    rh_status_q || exit 0
+    stop
+    ;;
+  restart|force-reload)
+    restart
+    ;;
+  reload)
+    rh_status_q || exit 7
+    restart
+    ;;
+  status)
+    rh_status  
+    ;;
+  condrestart|try-restart)
+    rh_status_q || exit 0
+    restart
+    ;;
+  *)
+  echo $"Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload}"
+  exit 2
+esac
+
+exit $?
