@@ -1,0 +1,43 @@
+INSTALL := @INSTALL@
+
+vers := @PACKAGE_VERSION@
+
+prefix := @prefix@
+exec_prefix := @exec_prefix@
+libexecdir := @libexecdir@
+localstatedir := @localstatedir@
+datarootdir := @datarootdir@
+datadir := @datadir@
+
+all: src/hdfs-xrootd-fbmon
+
+clean:
+	rm -f src/hdfs-xrootd-fbmon hdfs-xrootd-fbmon-$(vers).tar.gz
+
+distclean: clean
+	rm -f Makefile config.status config.log
+
+src/hdfs-xrootd-fbmon: src/hdfs-xrootd-fbmon.in 
+	sed -e 's|[@]localstatedir@|$(localstatedir)|' $< > $@
+
+install: all
+	mkdir -p $(DESTDIR)$(libexecdir)
+	$(INSTALL) src/hdfs-xrootd-fbmon $(DESTDIR)$(libexecdir)
+	mkdir -p $(DESTDIR)$(datadir)/hdfs-xrootd-fbmon
+	$(INSTALL) -m 644 config/hdfs-xrootd-fbmon.init config/hdfs-xrootd-fbmon.sysconfig \
+	$(DESTDIR)$(datadir)/hdfs-xrootd-fbmon
+	mkdir -p $(DESTDIR)$(localstatedir)/log/hdfs-xrootd-fbmon
+	mkdir -p $(DESTDIR)$(localstatedir)/run/hdfs-xrootd-fbmon
+
+uninstall:
+	rm -rf $(DESTDIR)$(libexecdir)/hdfs-xrootd-fbmon
+	rm -rf $(DESTDIR)$(datadir)/hdfs-xrootd-fbmon
+	rm -rf $(DESTDIR)$(localstatedir)/run/hdfs-xrootd-fbmon
+
+dist:
+	rsync -avR autom4te.cache \
+	config/{hdfs-xrootd-fbmon.init,hdfs-xrootd-fbmon.sysconfig} \
+	configure configure.ac install-sh Makefile.in \
+	src/hdfs-xrootd-fbmon.in hdfs-xrootd-fbmon-$(vers)/
+	tar -czf hdfs-xrootd-fbmon-$(vers).tar.gz hdfs-xrootd-fbmon-$(vers)
+	rm -rf hdfs-xrootd-fbmon-$(vers)
