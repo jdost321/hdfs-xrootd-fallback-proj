@@ -16,5 +16,6 @@ AC_INIT([hdfs-xrootd-fallback-proj], [1.0.0])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_SUBDIRS([hdfs-xrootd-fallback
-                   hdfs-xrootd-healer])
+                   hdfs-xrootd-healer
+                   hdfs-xrootd-fbmon])
 AC_OUTPUT

@@ -647,7 +647,8 @@ enable_option_checking
 host_alias
 target_alias'
 ac_subdirs_all='hdfs-xrootd-fallback
-                   hdfs-xrootd-healer'
+                   hdfs-xrootd-healer
+                   hdfs-xrootd-fbmon'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -1755,7 +1756,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
-subdirs="$subdirs hdfs-xrootd-fallback hdfs-xrootd-healer"
+subdirs="$subdirs hdfs-xrootd-fallback hdfs-xrootd-healer hdfs-xrootd-fbmon"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
