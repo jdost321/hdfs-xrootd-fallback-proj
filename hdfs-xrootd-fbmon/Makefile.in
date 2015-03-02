@@ -24,7 +24,7 @@ install: all
 	mkdir -p $(DESTDIR)$(libexecdir)
 	$(INSTALL) src/hdfs-xrootd-fbmon $(DESTDIR)$(libexecdir)
 	mkdir -p $(DESTDIR)$(datadir)/hdfs-xrootd-fbmon
-	$(INSTALL) -m 644 config/hdfs-xrootd-fbmon.init config/hdfs-xrootd-fbmon.sysconfig \
+	$(INSTALL) -m 644 config/hdfs-xrootd-fbmon.{init,sysconfig,logrotate} \
 	$(DESTDIR)$(datadir)/hdfs-xrootd-fbmon
 	mkdir -p $(DESTDIR)$(localstatedir)/log/hdfs-xrootd-fbmon
 	mkdir -p $(DESTDIR)$(localstatedir)/run/hdfs-xrootd-fbmon
@@ -36,7 +36,7 @@ uninstall:
 
 dist:
 	rsync -avR autom4te.cache \
-	config/{hdfs-xrootd-fbmon.init,hdfs-xrootd-fbmon.sysconfig} \
+	config/hdfs-xrootd-fbmon.{init,sysconfig,logrotate} \
 	configure configure.ac install-sh Makefile.in \
 	src/hdfs-xrootd-fbmon.in hdfs-xrootd-fbmon-$(vers)/
 	tar -czf hdfs-xrootd-fbmon-$(vers).tar.gz hdfs-xrootd-fbmon-$(vers)

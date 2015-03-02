@@ -1,0 +1,8 @@
+/var/log/hdfs-xrootd-fbmon/hdfs-xrootd-fbmon.log {
+  missingok
+  notifempty
+  daily
+  rotate 30
+  compress
+  copytruncate
+}
