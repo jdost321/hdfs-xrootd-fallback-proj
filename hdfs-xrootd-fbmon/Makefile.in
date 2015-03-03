@@ -21,8 +21,8 @@ src/hdfs-xrootd-fbmon: src/hdfs-xrootd-fbmon.in
 	sed -e 's|[@]localstatedir@|$(localstatedir)|' $< > $@
 
 install: all
-	mkdir -p $(DESTDIR)$(libexecdir)
-	$(INSTALL) src/hdfs-xrootd-fbmon $(DESTDIR)$(libexecdir)
+	mkdir -p $(DESTDIR)$(libexecdir)/hdfs-xrootd-fbmon
+	$(INSTALL) src/hdfs-xrootd-fbmon $(DESTDIR)$(libexecdir)/hdfs-xrootd-fbmon
 	mkdir -p $(DESTDIR)$(datadir)/hdfs-xrootd-fbmon
 	$(INSTALL) -m 644 config/hdfs-xrootd-fbmon.{init,sysconfig,logrotate} \
 	$(DESTDIR)$(datadir)/hdfs-xrootd-fbmon

@@ -4,7 +4,7 @@
 
 Name:           hdfs-xrootd-fallback-proj
 Version:        1.0.0
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Tools to enable relaxed local Hadoop replication
 Group:          System Environment/Daemons
 License:        BSD
@@ -46,6 +46,18 @@ The HDFS XRootD Healer is installed on the XRootD Cache node and periodically
 compares corrupt blocks in Hadoop with blocks stored in the cache. It re-injects
 the repaired blocks once they are fully cached.
 
+%package -n hdfs-xrootd-fbmon
+Summary:        Fallback monitoring daemon
+Group:          System Environment/Daemons
+BuildArch:      noarch
+Requires: perl
+Requires: perl-Proc-Daemon
+Requires: perl-Time-HiRes
+
+%description -n hdfs-xrootd-fbmon
+The HDFS XRootD Fallback Monitor is a UDP listener that logs incomming messages
+sent from the datanodes whenever a fallback is triggered.
+
 %prep
 %setup -q
 
@@ -61,10 +73,14 @@ make %{?_smp_mflags}
 rm -rf %{buildroot}
 %make_install
 
-mkdir -p %{buildroot}/%{_sysconfdir}/hdfs-xrootd-healer
+# rhel specific dirs
+mkdir -p %{buildroot}/%{_sysconfdir}/sysconfig
 mkdir -p %{buildroot}/%{_initrddir}
 mkdir -p %{buildroot}/%{_sysconfdir}/cron.d
 mkdir -p %{buildroot}/%{_sysconfdir}/logrotate.d
+
+# rhel specific healer stuff
+mkdir -p %{buildroot}/%{_sysconfdir}/hdfs-xrootd-healer
 install -p -m 644 %{buildroot}/%{_datadir}/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg \
   %{buildroot}/%{_sysconfdir}/hdfs-xrootd-healer
 install -p %{buildroot}/%{_datadir}/hdfs-xrootd-healer/hdfs-xrootd-healer.init \
@@ -74,6 +90,14 @@ install -p -m 644 %{buildroot}/%{_datadir}/hdfs-xrootd-healer/hdfs-xrootd-healer
 install -p -m 644 %{buildroot}/%{_datadir}/hdfs-xrootd-healer/hdfs-xrootd-healer.logrotate \
   %{buildroot}/%{_sysconfdir}/logrotate.d/hdfs-xrootd-healer
 mkdir -p %{buildroot}/%{_localstatedir}/lock/hdfs-xrootd-healer
+
+#rhel specific fbmon stuff
+install -p -m 644 %{buildroot}/%{_datadir}/hdfs-xrootd-fbmon/hdfs-xrootd-fbmon.sysconfig \
+  %{buildroot}/%{_sysconfdir}/sysconfig/hdfs-xrootd-fbmon
+install -p %{buildroot}/%{_datadir}/hdfs-xrootd-fbmon/hdfs-xrootd-fbmon.init \
+  %{buildroot}/%{_initrddir}/hdfs-xrootd-fbmon
+install -p -m 644 %{buildroot}/%{_datadir}/hdfs-xrootd-fbmon/hdfs-xrootd-fbmon.logrotate \
+  %{buildroot}/%{_sysconfdir}/logrotate.d/hdfs-xrootd-fbmon
 
 %clean
 rm -rf %{buildroot}
@@ -99,6 +123,24 @@ if [ $1 = 0 ];then
   /sbin/chkconfig --del hdfs-xrootd-healer
 fi
 
+%pre -n hdfs-xrootd-fbmon
+getent group hdfsfbmon >/dev/null || groupadd -r hdfsfbmon
+getent passwd hdfsfbmon >/dev/null || \
+  useradd -r -g hdfsfbmon -d %{_datadir}/hdfs-xrootd-fbmon -s /sbin/noligin \
+  -c "HDFS XRootD Fallback Monitor User" hdfsfbmon
+exit 0
+
+%post -n hdfs-xrootd-fbmon
+if [ $1 = 1 ];then
+  /sbin/chkconfig --add hdfs-xrootd-fbmon
+fi
+
+%preun -n hdfs-xrootd-fbmon
+if [ $1 = 0 ];then
+  /sbin/service hdfs-xrootd-fbmon stop >/dev/null 2>&1 || :
+  /sbin/chkconfig --del hdfs-xrootd-fbmon
+fi
+
 %files -n hdfs-xrootd-fallback
 %defattr(-,root,root,-)
 %doc hdfs-xrootd-fallback/README
@@ -121,7 +163,21 @@ fi
 %attr(-,hdfshealer,hdfshealer) %{_localstatedir}/lock/hdfs-xrootd-healer
 %attr(-,hdfshealer,hdfshealer) %dir %{_localstatedir}/log/hdfs-xrootd-healer
 
+%files -n hdfs-xrootd-fbmon
+%defattr(-,root,root,-)
+%doc README LICENSE
+%{_libexecdir}/hdfs-xrootd-fbmon
+%{_datadir}/hdfs-xrootd-fbmon
+%config(noreplace) %{_sysconfdir}/sysconfig/hdfs-xrootd-fbmon
+%{_initrddir}/hdfs-xrootd-fbmon
+%{_sysconfdir}/logrotate.d/hdfs-xrootd-fbmon
+%attr(-,hdfsfbmon,hdfsfbmon) %dir %{_localstatedir}/log/hdfs-xrootd-fbmon
+%attr(-,hdfsfbmon,hdfsfbmon) %dir %{_localstatedir}/run/hdfs-xrootd-fbmon
+
 %changelog
+* Thu Mar 2 2015 Jeff Dost <jdost@ucsd.edu> - 1.0.0-5
+- Add fbmon rpm
+
 * Thu Dec 24 2014 Jeff Dost <jdost@ucsd.edu> - 1.0.0-4
 - Add healer rpm
 
