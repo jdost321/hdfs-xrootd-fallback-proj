@@ -1,6 +1,5 @@
 SYS_LOCK="/var/lock/subsys/hdfs-xrootd-healer"
 CRON_LOCK="/var/lock/hdfs-xrootd-healer/hdfs-xrootd-healer-cron"
-HEALER_SCRIPT="/usr/libexec/hdfs-xrootd-healer/hdfs_xrootd_healer.sh"
-SLEEP=43200
+HEALER_SCRIPT="/usr/sbin/hdfs-xrootd-healer"
 
-0 4 * * * hdfshealer [ ! -f $SYS_LOCK ] || [ -f $CRON_LOCK ] || { touch $CRON_LOCK && $HEALER_SCRIPT && sleep $SLEEP;rm $CRON_LOCK; }
+0 4 * * * root [ ! -f $SYS_LOCK ] || [ -f $CRON_LOCK ] || { touch $CRON_LOCK && $HEALER_SCRIPT;rm $CRON_LOCK; }
