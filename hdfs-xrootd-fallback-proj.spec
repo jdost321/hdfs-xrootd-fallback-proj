@@ -52,7 +52,6 @@ Group:          System Environment/Daemons
 BuildArch:      noarch
 Requires: perl
 Requires: perl-Proc-Daemon
-Requires: perl-Time-HiRes
 
 %description -n hdfs-xrootd-fbmon
 The HDFS XRootD Fallback Monitor is a UDP listener that logs incomming messages
