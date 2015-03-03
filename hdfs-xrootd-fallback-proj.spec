@@ -4,7 +4,7 @@
 
 Name:           hdfs-xrootd-fallback-proj
 Version:        1.0.0
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Tools to enable relaxed local Hadoop replication
 Group:          System Environment/Daemons
 License:        BSD
@@ -39,7 +39,9 @@ cluster and accesses blocks on demand via XRootD Cache on failed read exceptions
 %package -n hdfs-xrootd-healer
 Summary:        Daemon that periodically re-injects cached blocks back into hadoop
 Group:          System Environment/Daemons
-Requires: hadoop-hdfs >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
+BuildArch:      noarch
+Requires: hadoop-hdfs-fuse >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
+Requires: python
 
 %description -n hdfs-xrootd-healer
 The HDFS XRootD Healer is installed on the XRootD Cache node and periodically
@@ -70,7 +72,7 @@ make %{?_smp_mflags}
 
 %install
 rm -rf %{buildroot}
-%make_install
+make install DESTDIR=%{buildroot}
 
 # rhel specific dirs
 mkdir -p %{buildroot}/%{_sysconfdir}/sysconfig
@@ -103,13 +105,6 @@ rm -rf %{buildroot}
 
 %post -n hdfs-xrootd-fallback -p /sbin/ldconfig
 %postun -n hdfs-xrootd-fallback -p /sbin/ldconfig
-
-%pre -n hdfs-xrootd-healer
-getent group hdfshealer >/dev/null || groupadd -r hdfshealer
-getent passwd hdfshealer >/dev/null || \
-  useradd -r -g hdfshealer -d %{_sysconfdir}/hdfs-xrootd-healer -s /bin/bash \
-  -c "HDFS XRootD Healer User" hdfshealer
-exit 0
 
 %post -n hdfs-xrootd-healer
 if [ $1 = 1 ];then
@@ -151,16 +146,15 @@ fi
 %files -n hdfs-xrootd-healer
 %defattr(-,root,root,-)
 %doc README LICENSE
-%{_libdir}/hdfs-xrootd-healer
-%{_libexecdir}/hdfs-xrootd-healer
+%{_sbindir}/hdfs-xrootd-healer
 %{_datadir}/hdfs-xrootd-healer
-%attr(-,hdfshealer,hdfshealer) %dir %{_sysconfdir}/hdfs-xrootd-healer
+%dir %{_sysconfdir}/hdfs-xrootd-healer
 %config(noreplace) %{_sysconfdir}/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg
 %{_initrddir}/hdfs-xrootd-healer
 %{_sysconfdir}/cron.d/hdfs-xrootd-healer
 %{_sysconfdir}/logrotate.d/hdfs-xrootd-healer
-%attr(-,hdfshealer,hdfshealer) %{_localstatedir}/lock/hdfs-xrootd-healer
-%attr(-,hdfshealer,hdfshealer) %dir %{_localstatedir}/log/hdfs-xrootd-healer
+%dir %{_localstatedir}/lock/hdfs-xrootd-healer
+%dir %{_localstatedir}/log/hdfs-xrootd-healer
 
 %files -n hdfs-xrootd-fbmon
 %defattr(-,root,root,-)

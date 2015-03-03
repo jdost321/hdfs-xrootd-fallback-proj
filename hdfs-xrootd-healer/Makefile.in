@@ -29,8 +29,7 @@ install: all
 	mkdir -p $(DESTDIR)$(sbindir)
 	$(INSTALL) src/hdfs-xrootd-healer $(DESTDIR)$(sbindir)
 	mkdir -p $(DESTDIR)$(datadir)/hdfs-xrootd-healer
-	$(INSTALL) -m 644 config/hdfs-xrootd-healer.cfg config/hdfs-xrootd-healer.cron \
-	config/hdfs-xrootd-healer.init config/hdfs-xrootd-healer.logrotate \
+	$(INSTALL) -m 644 config/hdfs-xrootd-healer.{cfg,cron,init,logrotate} \
 	$(DESTDIR)$(datadir)/hdfs-xrootd-healer
 	mkdir -p $(DESTDIR)$(localstatedir)/log/hdfs-xrootd-healer
 
@@ -40,7 +39,7 @@ uninstall:
 
 dist:
 	rsync -avR autom4te.cache \
-	config/{hdfs-xrootd-healer.cfg.in,hdfs-xrootd-healer.cron,hdfs-xrootd-healer.init,hdfs-xrootd-healer.logrotate} \
+	config/hdfs-xrootd-healer.{cfg.in,cron,init,logrotate} \
 	configure configure.ac install-sh Makefile.in \
 	src/hdfs-xrootd-healer.in hdfs-xrootd-healer-$(vers)/
 	tar -czf hdfs-xrootd-healer-$(vers).tar.gz hdfs-xrootd-healer-$(vers)
