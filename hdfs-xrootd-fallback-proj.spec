@@ -152,7 +152,7 @@ fi
 %config(noreplace) %{_sysconfdir}/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg
 %{_initrddir}/hdfs-xrootd-healer
 %{_sysconfdir}/cron.d/hdfs-xrootd-healer
-%{_sysconfdir}/logrotate.d/hdfs-xrootd-healer
+%config(noreplace) %{_sysconfdir}/logrotate.d/hdfs-xrootd-healer
 %dir %{_localstatedir}/lock/hdfs-xrootd-healer
 %dir %{_localstatedir}/log/hdfs-xrootd-healer
 
@@ -163,7 +163,7 @@ fi
 %{_datadir}/hdfs-xrootd-fbmon
 %config(noreplace) %{_sysconfdir}/sysconfig/hdfs-xrootd-fbmon
 %{_initrddir}/hdfs-xrootd-fbmon
-%{_sysconfdir}/logrotate.d/hdfs-xrootd-fbmon
+%config(noreplace) %{_sysconfdir}/logrotate.d/hdfs-xrootd-fbmon
 %attr(-,hdfsfbmon,hdfsfbmon) %dir %{_localstatedir}/log/hdfs-xrootd-fbmon
 %attr(-,hdfsfbmon,hdfsfbmon) %dir %{_localstatedir}/run/hdfs-xrootd-fbmon
 
