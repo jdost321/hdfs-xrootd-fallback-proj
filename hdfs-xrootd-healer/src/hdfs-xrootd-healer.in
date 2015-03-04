@@ -141,16 +141,17 @@ if __name__ == '__main__':
 
       fin = None
       try:
-        fin = open(orig_md5_path) 
-        for line in fin:
-          if line.startswith('MD5:'):
-            orig_md5 = line.split(':')[1].strip()
+        try:
+          fin = open(orig_md5_path) 
+          for line in fin:
+            if line.startswith('MD5:'):
+              orig_md5 = line.split(':')[1].strip()
 
-      except IOError, e:
-        repaired_files -= 1
-        log(0, "ERROR: Unable to parse original checksum, skipping: %s" % f)
-        LOG_OUT.write("  %s\n" % e)
-        continue
+        except IOError, e:
+          repaired_files -= 1
+          log(0, "ERROR: Unable to parse original checksum, skipping: %s" % f)
+          LOG_OUT.write("  %s\n" % e)
+          continue
       finally:
         if fin is not None:
           fin.close()
@@ -166,19 +167,20 @@ if __name__ == '__main__':
       fin = None
       fout = None
       try:
-        fin = open(orig_filepath, 'rb')
-        fout = open(tmp_filepath, 'wb')
-        while True:
-          bytes = fin.read(CONF['BLOCK_SIZE'])
-          if bytes == '':
-            break
-          new_md5.update(bytes)
-          fout.write(bytes)
-      except IOError, e:
-        repaired_files -= 1
-        log(0, "ERROR: Error occurred repairing file, skipping: %s" % f)
-        LOG_OUT.write("  %s\n" % e)
-        continue
+        try:
+          fin = open(orig_filepath, 'rb')
+          fout = open(tmp_filepath, 'wb')
+          while True:
+            bytes = fin.read(CONF['BLOCK_SIZE'])
+            if bytes == '':
+              break
+            new_md5.update(bytes)
+            fout.write(bytes)
+        except IOError, e:
+          repaired_files -= 1
+          log(0, "ERROR: Error occurred repairing file, skipping: %s" % f)
+          LOG_OUT.write("  %s\n" % e)
+          continue
 
       finally:
         if fin != None:
