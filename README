@@ -5,3 +5,28 @@ utilizing global redundancy provided by the XRootD Federation. This system
 provides exception handling at the block level, a cache to locally store
 repaired blocks retrieved from the Federation, and the ability to re-inject the
 repaired blocks back into Hadoop.
+
+The system currently is composed of 3 packages:
+hdfs-xrootd-fallback
+hdfs-xrootd-fbmon
+hdfs-xrootd-healer
+
+Installation instructions can be found here:
+http://www.gled.org/cgi-bin/twiki/view/Main/HdfsXrootd
+
+
+hdfs-xrootd-fallback
+====================
+The HDFS XRootD Fallback package is installed on every datanode in the Hadoop
+cluster and accesses blocks on demand via XRootD Cache on failed read exceptions
+
+hdfs-xrootd-fbmon
+=================
+The HDFS XRootD Fallback Monitor is a UDP listener that logs incomming messages
+sent from the datanodes whenever a fallback is triggered.
+
+hdfs-xrootd-healer
+==================
+The HDFS XRootD Healer is installed on the XRootD Cache node and periodically
+compares corrupt blocks in Hadoop with blocks stored in the cache. It re-injects
+the repaired blocks once they are fully cached.

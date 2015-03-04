@@ -1,6 +1,0 @@
-hdfs-xrootd-fallback
-====================
-The HDFS XRootD Fallback package is installed on every datanode in the Hadoop
-cluster and accesses blocks on demand via XRootD Cache on failed read exceptions
-
-http://www.gled.org/cgi-bin/twiki/view/Main/HdfsXrootd

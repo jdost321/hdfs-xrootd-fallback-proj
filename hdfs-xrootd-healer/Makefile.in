@@ -42,5 +42,6 @@ dist:
 	config/hdfs-xrootd-healer.{cfg.in,cron,init,logrotate} \
 	configure configure.ac install-sh Makefile.in \
 	src/hdfs-xrootd-healer.in hdfs-xrootd-healer-$(vers)/
+	rsync -av ../README ../LICENSE hdfs-xrootd-healer-$(vers)/
 	tar -czf hdfs-xrootd-healer-$(vers).tar.gz hdfs-xrootd-healer-$(vers)
 	rm -rf hdfs-xrootd-healer-$(vers)
