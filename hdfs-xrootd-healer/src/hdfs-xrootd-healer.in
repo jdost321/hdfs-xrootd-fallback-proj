@@ -180,6 +180,14 @@ if __name__ == '__main__':
           repaired_files -= 1
           log(0, "ERROR: Error occurred repairing file, skipping: %s" % f)
           LOG_OUT.write("  %s\n" % e)
+          if fout != None:
+            fout.close()
+            if os.path.isfile(tmp_filepath):
+              try:
+                os.unlink(tmp_filepath)
+              except OSError, e:
+                log(0, "WARN: Unable to remove file: %s" % tmp_filepath)
+                LOG_OUT.write("  %s\n" % e)
           continue
 
       finally:
@@ -210,6 +218,11 @@ if __name__ == '__main__':
         repaired_files -= 1
         log(0, "ERROR: Unable to preserve meta info, skipping: %s" % f)
         LOG_OUT.write("  %s\n" % e)
+        try:
+          os.unlink(tmp_filepath)
+        except OSError, e:
+          log(0, "WARN: Unable to remove file: %s" % tmp_filepath)
+          LOG_OUT.write("  %s\n" % e)
         continue
 
       if PRETEND:
