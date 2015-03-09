@@ -1,0 +1,8 @@
+v1.0.1
+------
+- Improve cleanup of tmp files when repairs fail
+- Include this NEWS file
+
+v1.0.0
+------
+- Initial release!

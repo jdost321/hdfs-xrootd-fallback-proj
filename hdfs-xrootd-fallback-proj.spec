@@ -3,8 +3,8 @@
 %define lib_hdfs %{lib_hadoop_dirname}/hadoop-hdfs
 
 Name:           hdfs-xrootd-fallback-proj
-Version:        1.0.0
-Release:        6%{?dist}
+Version:        1.0.1
+Release:        1%{?dist}
 Summary:        Tools to enable relaxed local Hadoop replication
 Group:          System Environment/Daemons
 License:        BSD
@@ -137,14 +137,14 @@ fi
 
 %files -n hdfs-xrootd-fallback
 %defattr(-,root,root,-)
-%doc README LICENSE
+%doc README LICENSE NEWS
 %{lib_hadoop}/client/hdfs-xrootd-fallback-%{version}.jar
 %{_libdir}/libXrdBlockFetcher.so*
 %{_sysconfdir}/hadoop/conf.osg/xfbfs-site.xml
 
 %files -n hdfs-xrootd-healer
 %defattr(-,root,root,-)
-%doc README LICENSE
+%doc README LICENSE NEWS
 %{_sbindir}/hdfs-xrootd-healer
 %{_datadir}/hdfs-xrootd-healer
 %dir %{_sysconfdir}/hdfs-xrootd-healer
@@ -157,7 +157,7 @@ fi
 
 %files -n hdfs-xrootd-fbmon
 %defattr(-,root,root,-)
-%doc README LICENSE
+%doc README LICENSE NEWS
 %{_libexecdir}/hdfs-xrootd-fbmon
 %{_datadir}/hdfs-xrootd-fbmon
 %config(noreplace) %{_sysconfdir}/sysconfig/hdfs-xrootd-fbmon
@@ -167,6 +167,9 @@ fi
 %attr(-,hdfsfbmon,hdfsfbmon) %dir %{_localstatedir}/run/hdfs-xrootd-fbmon
 
 %changelog
+* Thu Mar 9 2015 Jeff Dost <jdost@ucsd.edu> - 1.0.1-1
+- Release v1.0.1
+
 * Thu Mar 2 2015 Jeff Dost <jdost@ucsd.edu> - 1.0.0-5
 - Add fbmon rpm
 

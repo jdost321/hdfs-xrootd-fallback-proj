@@ -13,7 +13,7 @@ install uninstall:
 	$(MAKE) -C hdfs-xrootd-fbmon $@
 
 top-clean:
-	rm -f hdfs-xrootd-fallback-proj-1.0.0.tar.gz
+	rm -f hdfs-xrootd-fallback-proj-$(vers).tar.gz
 
 clean: top-clean
 	$(MAKE) -C hdfs-xrootd-fallback $@
@@ -39,6 +39,6 @@ dist:
 	mv hdfs-xrootd-healer-$(vers) hdfs-xrootd-healer && \
 	mv hdfs-xrootd-fbmon-$(vers) hdfs-xrootd-fbmon
 	rsync -avR autom4te.cache configure configure.ac install-sh \
-	LICENSE Makefile.in README hdfs-xrootd-fallback-proj-$(vers)/
+	LICENSE Makefile.in README NEWS hdfs-xrootd-fallback-proj-$(vers)/
 	tar -czf hdfs-xrootd-fallback-proj-$(vers).tar.gz hdfs-xrootd-fallback-proj-$(vers)
 	rm -rf hdfs-xrootd-fallback-proj-$(vers)

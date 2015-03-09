@@ -69,6 +69,6 @@ uninstall:
 
 dist:
 	rsync -avR src/org/xrootd/hdfs/fallback/*.java src/*.cxx Makefile.in config/xfbfs-site.xml autom4te.cache configure configure.ac install-sh hdfs-xrootd-fallback-$(vers)/
-	rsync -av ../README ../LICENSE hdfs-xrootd-fallback-$(vers)/
+	rsync -av ../README ../LICENSE ../NEWS hdfs-xrootd-fallback-$(vers)/
 	tar -czf hdfs-xrootd-fallback-$(vers).tar.gz hdfs-xrootd-fallback-$(vers)
 	rm -rf hdfs-xrootd-fallback-$(vers)

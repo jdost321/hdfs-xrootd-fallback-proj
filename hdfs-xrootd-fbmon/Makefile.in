@@ -39,6 +39,6 @@ dist:
 	config/hdfs-xrootd-fbmon.{init,sysconfig,logrotate} \
 	configure configure.ac install-sh Makefile.in \
 	src/hdfs-xrootd-fbmon.in hdfs-xrootd-fbmon-$(vers)/
-	rsync -av ../README ../LICENSE hdfs-xrootd-fbmon-$(vers)/
+	rsync -av ../README ../LICENSE ../NEWS hdfs-xrootd-fbmon-$(vers)/
 	tar -czf hdfs-xrootd-fbmon-$(vers).tar.gz hdfs-xrootd-fbmon-$(vers)
 	rm -rf hdfs-xrootd-fbmon-$(vers)
