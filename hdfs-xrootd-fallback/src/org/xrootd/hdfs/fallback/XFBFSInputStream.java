@@ -34,7 +34,7 @@ public class XFBFSInputStream extends DFSInputStream {
       boolean verifyChecksum) throws IOException, UnresolvedLinkException
   {
     super(dfsClient, src, buffersize, verifyChecksum);
-    xbf = new XrdBlockFetcher();
+    xbf = new XrdBlockFetcher(src, (int) dfsClient.getBlockSize(src));
     badBlocks = Collections.synchronizedSet(new HashSet<ExtendedBlock>());
   }
 
@@ -99,7 +99,7 @@ public class XFBFSInputStream extends DFSInputStream {
             synchronized (xbf) {
               if (!xbf.isOpen()) {
                 XrdUdpLog.send(1, "XFBFSInputStream::read() Opening XrdClient on " + info(exc));
-                xbf.open(src, (int) dfsClient.getBlockSize(src));
+                xbf.open();
               }
 
               // cast works since bytesToRead is really <= int size anyway

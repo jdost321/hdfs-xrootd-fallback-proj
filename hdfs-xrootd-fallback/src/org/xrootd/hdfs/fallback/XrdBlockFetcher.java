@@ -8,6 +8,7 @@ public class XrdBlockFetcher
     public  long   m_native_handle;
     private int    m_block_size;
     private String m_url;
+    private boolean m_is_open;
 
     // ----------------------------------------------------------------
 
@@ -18,6 +19,7 @@ public class XrdBlockFetcher
     private native void createXrdClient(String url, int block_size);
     private native void destroyXrdClient(long handle);
 
+    private native void openXrd(long handle);
     private native void readXrd(long handle, long offset, int len,
                                 byte[] arr, int arr_offset);
 
@@ -47,23 +49,26 @@ public class XrdBlockFetcher
 
     // ----------------------------------------------------------------
 
-    public XrdBlockFetcher()
+    public XrdBlockFetcher(String url, int block_size)
     {
         m_native_handle = 0;
+        m_url           = url;
+        m_block_size    = block_size;
+        m_is_open       = false;
+
+        createXrdClient(m_url, block_size);
+        // m_native_handle set as the last line in above native function
     }
 
     public boolean isOpen()
     {
-        return m_native_handle != 0;
+        return m_is_open;
     }
 
-    public void open(String url, int block_size) throws IOException
+    public void open() throws IOException
     {
-        m_url           = url;
-        m_block_size    = block_size;
-
-        createXrdClient(m_url, block_size);
-        // m_native_handle set as the last line in above native function
+        openXrd(m_native_handle);
+        // m_is_open set to true in above native function if success
     }
 
     public void close() throws IOException

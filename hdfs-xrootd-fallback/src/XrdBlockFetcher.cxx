@@ -206,6 +206,7 @@ public:
     {
       send_log(env, 1, strprintf("XrdMan::XrdMan() PFN to LFN:\n  %s\n  %s", url, m_url.c_str()));
     }
+    /* drop lfn error handling until we fix throws in JNI
     else
     {
       if (s_config.pfn_to_lfn_must_match)
@@ -214,27 +215,14 @@ public:
                                 url));
       }
     }
+    */
 
     m_url = strprintf("%s%s?hdfs_block_size=%d%s",
                       s_config.prefix.c_str(),
                       m_url.c_str(), block_size,
                       s_config.postfix.c_str());
 
-    send_log(env, 0, strprintf("XrdMan::XrdMan() Opening LFN '%s'", m_url.c_str()));
-
     m_xrd_client = new XrdClient(m_url.c_str());
-
-    if ( ! m_xrd_client->Open(0, kXR_async) ||
-           m_xrd_client->LastServerResp()->status != kXR_ok)
-    {
-      struct ServerResponseBody_Error *srb = m_xrd_client->LastServerError();
-
-      throw_io(env, strprintf("XrdMan::XrdMan() Failed opening URL '%s', errnum=%d. Server error:\n%s",
-                              m_url.c_str(), srb->errnum, srb->errmsg));
-    }
-
-    m_xrd_client->Stat(&m_stat_info);
-
     m_cache.resize(m_cache_capacity);
   }
 
@@ -251,6 +239,24 @@ public:
     send_log (env, 0, strprintf("XrdMan::~XrdMan() Closing LFN '%s'", m_url.c_str()));
   }
 
+  bool Open(JNIEnv *env)
+  {
+    send_log(env, 0, strprintf("XrdMan::XrdMan() Opening LFN '%s'", m_url.c_str()));
+
+    if ( ! m_xrd_client->Open(0, kXR_async) ||
+           m_xrd_client->LastServerResp()->status != kXR_ok)
+    {
+      struct ServerResponseBody_Error *srb = m_xrd_client->LastServerError();
+
+      throw_io(env, strprintf("XrdMan::XrdMan() Failed opening URL '%s', errnum=%d. Server error:\n%s",
+                              m_url.c_str(), srb->errnum, srb->errmsg));
+      return false;
+    }
+
+    m_xrd_client->Stat(&m_stat_info);
+    return true;
+  }
+
   void Read(JNIEnv *env, long long offset, int length, jbyteArray arr, int arr_offset)
   {
     send_log(env, 2, strprintf("XrdMan::Read(off=%lld, len=%d) %s", offset, length, m_url.c_str()));
@@ -263,6 +269,7 @@ public:
     {
       throw_io(env, strprintf("XrdMan::Read(off=%lld, len=%d) Request for data outside of file, file-size=%lld.",
                              offset, length, m_stat_info.size));
+      return;
     }
 
     long long position = 0;
@@ -366,6 +373,18 @@ JNIEXPORT void JNICALL Java_org_xrootd_hdfs_fallback_XrdBlockFetcher_destroyXrdC
 }
 
 //------------------------------------------------------------------------------
+
+JNIEXPORT void JNICALL Java_org_xrootd_hdfs_fallback_XrdBlockFetcher_openXrd
+(JNIEnv *env, jobject self, jlong handle)
+{
+  jclass   jcls = env->GetObjectClass(self);
+  jfieldID jfid = env->GetFieldID(jcls, "m_is_open", "Z");
+
+  XrdMan *xman = (XrdMan*) handle;
+
+  if (xman->Open(env))
+    env->SetBooleanField(self, jfid, true);
+}
 
 JNIEXPORT void JNICALL Java_org_xrootd_hdfs_fallback_XrdBlockFetcher_readXrd
 (JNIEnv *env, jobject self, jlong handle, jlong offset, jint length,
