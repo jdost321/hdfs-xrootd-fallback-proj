@@ -1,3 +1,7 @@
+v1.0.2
+------
+- Fix memory leak and busy loops due to improper JNI exception handling
+
 v1.0.1
 ------
 - Improve cleanup of tmp files when repairs fail

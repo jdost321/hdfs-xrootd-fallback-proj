@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([hdfs-xrootd-healer], [1.0.1])
+AC_INIT([hdfs-xrootd-healer], [1.0.2])
 AC_CONFIG_SRCDIR([src/hdfs-xrootd-healer.in])
 
 # Checks for programs.

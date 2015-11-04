@@ -3,7 +3,7 @@
 %define lib_hdfs %{lib_hadoop_dirname}/hadoop-hdfs
 
 Name:           hdfs-xrootd-fallback-proj
-Version:        1.0.1
+Version:        1.0.2
 Release:        1%{?dist}
 Summary:        Tools to enable relaxed local Hadoop replication
 Group:          System Environment/Daemons
@@ -39,7 +39,9 @@ cluster and accesses blocks on demand via XRootD Cache on failed read exceptions
 %package -n hdfs-xrootd-healer
 Summary:        Daemon that periodically re-injects cached blocks back into hadoop
 Group:          System Environment/Daemons
+%if 0%{!?el5:1}
 BuildArch:      noarch
+%endif
 Requires: hadoop-hdfs-fuse >= 2.0.0+545-1.cdh4.1.1.p0.19.osg
 Requires: python
 
@@ -51,7 +53,9 @@ the repaired blocks once they are fully cached.
 %package -n hdfs-xrootd-fbmon
 Summary:        Fallback monitoring daemon
 Group:          System Environment/Daemons
+%if 0%{!?el5:1}
 BuildArch:      noarch
+%endif
 Requires: perl
 Requires: perl-Proc-Daemon
 
@@ -63,6 +67,9 @@ sent from the datanodes whenever a fallback is triggered.
 %setup -q
 
 %build
+
+export JAVA_HOME=%{java_home}
+
 %configure \
 HADOOP_HOME=%{lib_hadoop} \
 HADOOP_HDFS_HOME=%{lib_hdfs} \
@@ -167,6 +174,9 @@ fi
 %attr(-,hdfsfbmon,hdfsfbmon) %dir %{_localstatedir}/run/hdfs-xrootd-fbmon
 
 %changelog
+* Thu Nov 4 2015 Jeff Dost <jdost@ucsd.edu> - 1.0.2-1
+- Release v1.0.2
+
 * Thu Mar 9 2015 Jeff Dost <jdost@ucsd.edu> - 1.0.1-1
 - Release v1.0.1
 
