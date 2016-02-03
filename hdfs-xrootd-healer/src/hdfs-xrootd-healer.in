@@ -3,6 +3,7 @@
 import sys
 import os
 import re
+import select
 
 # md5 fallback if python <= 2.4
 try:
@@ -262,12 +263,63 @@ if __name__ == '__main__':
 
     log(0, "Begin repairing files")
 
+    # to receive data from children
+    pipe_fds = []
+    for i in range(len(file_bins)):
+      pipe_fds.append(os.pipe())
+
     for i in range(len(file_bins)):
       pid = os.fork()
+      # i'm the child
       if pid == 0:
+        # close pipes i'm not using
+        for j in range(len(pipe_fds)):
+          if j == i:
+            continue
+
+          os.close(pipe_fds[j][0])
+          os.close(pipe_fds[j][1])
+
+        # close reading end and create write stream
+        os.close(pipe_fds[i][0])
+        fout = os.fdopen(pipe_fds[i][1], 'w')
+
         repaired_files = repair_files(i, file_bins[i])
+        fout.write("%i\n" % repaired_files)
+
+        fout.close()
         sys.exit(0)
 
+    # i'm the parent
+
+    # set up child streams
+    child_streams = []
+    for fds in pipe_fds:
+      # close write ends
+      os.close(fds[1])
+      child_streams.append(os.fdopen(fds[0], 'r'))
+
+    # read data as it comes in
+    while True:
+      ready_streams = select.select(child_streams,(),())
+      to_close = []
+
+      for fin in ready_streams[0]:
+        line = fin.readline()
+        if line == '':
+          to_close.append(fin)
+        else:
+          repaired_files += int(line)
+
+      # close out streams that are finished
+      for fin in to_close:
+        fin.close()
+        child_streams.remove(fin)
+      # we're done when no more streams are left
+      if len(child_streams) == 0:
+        break
+
+    # reap children
     while True:
       try:
         os.wait()
