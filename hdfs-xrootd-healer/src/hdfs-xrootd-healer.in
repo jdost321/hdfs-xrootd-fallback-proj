@@ -200,9 +200,6 @@ def repair_files(id, file_list):
         LOG_OUT.write("  %s\n" % e)
 
   return repaired_files
-  #repairable_files_tot += repairable_files
-  #repaired_files_tot += repaired_files
-  #log(0, "Repaired Files: %s" % repaired_files)
 
 LOG_LEVEL = 0
 LOG_OUT = sys.stdout
