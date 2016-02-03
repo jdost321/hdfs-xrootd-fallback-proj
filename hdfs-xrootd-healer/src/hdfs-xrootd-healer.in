@@ -254,9 +254,9 @@ if __name__ == '__main__':
 
     file_bins = [[] for i in range(CONF['NUM_WORKERS'])]
 
-    for i in range(len(broken_files)):
-      if broken_files[i] in cached_files:
-        file_bins[i % len(file_bins)].append(broken_files[i])
+    for f in broken_files:
+      if f in cached_files:
+        file_bins[repairable_files % len(file_bins)].append(f)
         repairable_files += 1
 
     log(0, "Repairable Files: %s" % repairable_files)
@@ -308,6 +308,8 @@ if __name__ == '__main__':
         line = fin.readline()
         if line == '':
           to_close.append(fin)
+          # if stream closed child is about to exit
+          os.wait()
         else:
           repaired_files += int(line)
 
@@ -317,13 +319,6 @@ if __name__ == '__main__':
         child_streams.remove(fin)
       # we're done when no more streams are left
       if len(child_streams) == 0:
-        break
-
-    # reap children
-    while True:
-      try:
-        os.wait()
-      except OSError:
         break
 
     repairable_files_tot += repairable_files
