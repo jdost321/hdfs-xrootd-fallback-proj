@@ -84,6 +84,30 @@ def get_broken_files(path):
 
   return broken_files
 
+# alternative to fuse
+def get_cksum(path):
+  p = subprocess.Popen(['hadoop', 'fs', '-cat', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  res = p.communicate()
+  if p.returncode != 0:
+    # just spit out first error line of hadoop since its noisy
+    raise IOError(res[1].split()[0])
+
+  for line in res[0].split():
+    if line.startswith('MD5:'):
+      orig_md5 = line.split(':')[1].strip()
+
+  return orig_md5
+
+def md5_cp(src, dest, bufsize):
+  cmd = '/root/better-healer/hcopy.sh'
+  p = subprocess.Popen([cmd, src, dest, bufsize], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  res = p.communicate()
+  if p.returncode != 0:
+    #raise IOError("%s exited with code %i\n%s" % (cmd, p.returncode,res[1]))
+    raise IOError("%s exited with code %i" % (cmd, p.returncode))
+
+  return res[0].split()[-1]
+
 def repair_files(id, file_list):
   repaired_files = 0
   for f in file_list:
@@ -91,7 +115,7 @@ def repair_files(id, file_list):
     repaired_files += 1
 
     log_wkr(0, id, f)
-    orig_md5_path = '%s%s%s' % (CONF['FUSE_MOUNT'], CONF['CKSUM_DIR'], f)
+    '''orig_md5_path = '%s%s%s' % (CONF['FUSE_MOUNT'], CONF['CKSUM_DIR'], f)
 
     fin = None
     try:
@@ -109,15 +133,28 @@ def repair_files(id, file_list):
     finally:
       if fin is not None:
         fin.close()
+    '''
 
-    new_md5 = md5()
+    # alternative to fuse
+    orig_md5_path = '%s%s' % (CONF['CKSUM_DIR'], f)
 
-    orig_filepath = '%s%s' % (CONF['FUSE_MOUNT'], f)
+    try:
+      orig_md5 = get_cksum(orig_md5_path)
+    except IOError, e:
+      log_wkr(0, id, "ERROR: Unable to parse original checksum, skipping: %s" % f)
+      LOG_OUT.write("  %s\n" % e)
+      continue
+
+    #new_md5 = md5()
+
+    orig_fuse_filepath = '%s%s' % (CONF['FUSE_MOUNT'], f)
+    orig_filepath = f
 
     f_base = "%s.%i" % (os.path.basename(f),id)
-    tmp_filepath = os.path.join('%s%s' % (CONF['FUSE_MOUNT'], CONF['HDFS_TMP_DIR']), f_base)
+    tmp_fuse_filepath = os.path.join('%s%s' % (CONF['FUSE_MOUNT'], CONF['HDFS_TMP_DIR']), f_base)
+    tmp_filepath = os.path.join(CONF['HDFS_TMP_DIR'], f_base)
 
-    fin = None
+    '''fin = None
     fout = None
     try:
       try:
@@ -148,45 +185,62 @@ def repair_files(id, file_list):
         fin.close()
       if fout != None:
         fout.close()
+    '''
 
-    if orig_md5 != new_md5.hexdigest():
+    try: 
+      new_md5 = md5_cp(orig_filepath, tmp_filepath, str(CONF['BLOCK_SIZE']))
+    except IOError, e:
+      repaired_files -= 1
+      log_wkr(0, id, "ERROR: Error occurred repairing file, skipping: %s" % f)
+      LOG_OUT.write("  %s\n" % e)
+      if os.path.isfile(tmp_fuse_filepath):
+        try:
+          os.unlink(tmp_fuse_filepath)
+        except OSError, e:
+          log_wkr(0, id, "WARN: Unable to remove file: %s" % tmp_fuse_filepath)
+          LOG_OUT.write("  %s\n" % e)
+      continue
+
+    #if orig_md5 != new_md5.hexdigest():
+    if orig_md5 != new_md5:
       log_wkr(0, id, "ERROR: Checksums don't match, skipping: %s" % f)
       LOG_OUT.write("    original: %s\n" % orig_md5)
-      LOG_OUT.write("  calculated: %s\n" % new_md5.hexdigest())
+      #LOG_OUT.write("  calculated: %s\n" % new_md5.hexdigest())
+      LOG_OUT.write("  calculated: %s\n" % new_md5)
       try:
-        os.unlink(tmp_filepath)
+        os.unlink(tmp_fuse_filepath)
       except OSError, e:
-        log_wkr(0, id, "WARN: Unable to remove file: %s" % tmp_filepath)
+        log_wkr(0, id, "WARN: Unable to remove file: %s" % tmp_fuse_filepath)
         LOG_OUT.write("  %s\n" % e)
 
       repaired_files -= 1
       continue
 
     try:
-      orig_stat = os.stat(orig_filepath)
+      orig_stat = os.stat(orig_fuse_filepath)
 
-      os.chown(tmp_filepath, orig_stat.st_uid, orig_stat.st_gid)
-      os.chmod(tmp_filepath, orig_stat.st_mode)
+      os.chown(tmp_fuse_filepath, orig_stat.st_uid, orig_stat.st_gid)
+      os.chmod(tmp_fuse_filepath, orig_stat.st_mode)
     except OSError, e:
       repaired_files -= 1
       log_wkr(0, id, "ERROR: Unable to preserve meta info, skipping: %s" % f)
       LOG_OUT.write("  %s\n" % e)
       try:
-        os.unlink(tmp_filepath)
+        os.unlink(tmp_fuse_filepath)
       except OSError, e:
-        log_wkr(0, id, "WARN: Unable to remove file: %s" % tmp_filepath)
+        log_wkr(0, id, "WARN: Unable to remove file: %s" % tmp_fuse_filepath)
         LOG_OUT.write("  %s\n" % e)
       continue
 
     if PRETEND:
       try:
-        os.unlink(tmp_filepath)
+        os.unlink(tmp_fuse_filepath)
       except OSError:
         pass
     else:
       try:
-        os.rename(orig_filepath, "%s.bak" % orig_filepath)
-        os.rename(tmp_filepath, orig_filepath)
+        os.rename(orig_fuse_filepath, "%s.bak" % orig_fuse_filepath)
+        os.rename(tmp_fuse_filepath, orig_fuse_filepath)
       except OSError, e:
         repaired_files -= 1
         log_wkr(0, id, "ERROR: Failed to replace repaired file: %s" % f)
@@ -194,9 +248,9 @@ def repair_files(id, file_list):
         continue
 
       try:
-        os.unlink("%s.bak" % orig_filepath)
+        os.unlink("%s.bak" % orig_fuse_filepath)
       except OSError, e:
-        log_wkr(0, id, "WARN: Unable to remove file: %s.bak" % orig_filepath)
+        log_wkr(0, id, "WARN: Unable to remove file: %s.bak" % orig_fuse_filepath)
         LOG_OUT.write("  %s\n" % e)
 
   return repaired_files
