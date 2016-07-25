@@ -62,8 +62,8 @@ AC_CHECK_FILE([${JAVA_HOME}/include/jni.h], [],
 AC_LANG([C++])
 AC_CHECK_HEADERS([pcrecpp.h], [],
   [AC_MSG_ERROR([cannot find pcrecpp.h, exiting])])
-AC_CHECK_HEADERS([XrdClient/XrdClient.hh], [],
-  [AC_MSG_ERROR([cannot find XrdClient/XrdClient.hh, exiting])])
+AC_CHECK_HEADERS([XrdCl/XrdClFile.hh], [],
+  [AC_MSG_ERROR([cannot find XrdCl/XrdClFile.hh, exiting])])
 
 # Checks for typedefs, structures, and compiler characteristics.
 

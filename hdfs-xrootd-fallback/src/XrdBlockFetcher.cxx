@@ -1,6 +1,6 @@
 #include "XrdBlockFetcher.h"
 
-#include "XrdClient/XrdClient.hh"
+#include "XrdCl/XrdClFile.hh"
 
 #include <pcrecpp.h>
 
@@ -58,11 +58,11 @@ public:
     std::string prefix;
     std::string postfix;
 
-    int                      pfn_to_lfn_size;
+    int                       pfn_to_lfn_size;
     std::vector<pcrecpp::RE*> pfn_to_lfn_regexps;
-    std::vector<std::string> pfn_to_lfn_replacements;
+    std::vector<std::string>  pfn_to_lfn_replacements;
 
-    bool                     pfn_to_lfn_must_match;
+    bool                      pfn_to_lfn_must_match;
 
     Config() :
       pfn_to_lfn_size (0),
@@ -115,8 +115,8 @@ private:
   std::string         m_url;
   int                 m_block_size;
 
-  XrdClient          *m_xrd_client;
-  XrdClientStatInfo   m_stat_info;
+  XrdCl::File        *m_xrd_client;
+  XrdCl::StatInfo    *m_stat_info;
 
   std::vector<jbyte>  m_cache;
   long long           m_cache_offset;
@@ -142,7 +142,7 @@ private:
     // env->DeleteLocalRef(jcls);
   }
 
-  jbyte* get_cache(long long offset, int &bytes_available)
+  jbyte* get_cache(JNIEnv *env, long long offset, int &bytes_available)
   {
     // Make sure we have byte 'offset' in the local cache.
     //
@@ -169,13 +169,20 @@ private:
 
       // Do not read beyond file size.
       {
-        if (offset + len > m_stat_info.size)
+        if (offset + len > m_stat_info->GetSize())
         {
-          len = m_stat_info.size - offset;
+          len = m_stat_info->GetSize() - offset;
         }
       }
 
-      m_xrd_client->Read(&m_cache[0], offset, len);
+      uint32_t bytes_read;
+      XrdCl::Status st = m_xrd_client->Read(offset, len, &m_cache[0], bytes_read);
+      if ( ! st.IsOK())
+      {
+        throw_io(env, strprintf("XrdMan::get_cache() Failed Stat on URL '%s', errnum=%d, errstr:\n%s",
+                                m_url.c_str(), st.errNo, st.ToString().c_str()));
+        return 0;
+      }
 
       m_cache_offset = offset;
       m_cache_size   = len;
@@ -197,6 +204,8 @@ public:
 
   XrdMan(JNIEnv* env, const char* url, int block_size) :
     m_block_size     (block_size),
+    m_xrd_client     (0),
+    m_stat_info      (0),
     m_cache_offset   (-1),
     m_cache_capacity (std::min(512*1024, block_size)),
     m_cache_size     (0)
@@ -222,13 +231,16 @@ public:
                       m_url.c_str(), block_size,
                       s_config.postfix.c_str());
 
-    m_xrd_client = new XrdClient(m_url.c_str());
+    m_xrd_client = new XrdCl::File();
+
     m_cache.resize(m_cache_capacity);
   }
 
   ~XrdMan()
   {
+    m_xrd_client->Close();
     delete m_xrd_client;
+    delete m_stat_info;
   }
 
   void AboutToDestroy(JNIEnv *env)
@@ -241,19 +253,28 @@ public:
 
   bool Open(JNIEnv *env)
   {
-    send_log(env, 0, strprintf("XrdMan::XrdMan() Opening LFN '%s'", m_url.c_str()));
+    send_log(env, 0, strprintf("XrdMan::Open() Opening LFN '%s'", m_url.c_str()));
 
-    if ( ! m_xrd_client->Open(0, kXR_async) ||
-           m_xrd_client->LastServerResp()->status != kXR_ok)
+    XrdCl::XRootDStatus st;
+
+    st = m_xrd_client->Open(m_url, XrdCl::OpenFlags::Read);
+
+    if ( ! st.IsOK())
     {
-      struct ServerResponseBody_Error *srb = m_xrd_client->LastServerError();
-
-      throw_io(env, strprintf("XrdMan::XrdMan() Failed opening URL '%s', errnum=%d. Server error:\n%s",
-                              m_url.c_str(), srb->errnum, srb->errmsg));
+      throw_io(env, strprintf("XrdMan::Open() Failed Open on URL '%s', errnum=%d, errstr:\n%s",
+                              m_url.c_str(), st.errNo, st.ToString().c_str()));
       return false;
     }
 
-    m_xrd_client->Stat(&m_stat_info);
+    st = m_xrd_client->Stat(false, m_stat_info);
+
+    if ( ! st.IsOK())
+    {
+      throw_io(env, strprintf("XrdMan::Open() Failed Stat on URL '%s', errnum=%d, errstr:\n%s",
+                              m_url.c_str(), st.errNo, st.ToString().c_str()));
+      return false;
+    }
+
     return true;
   }
 
@@ -265,10 +286,10 @@ public:
     {
       return;
     }
-    if (offset + length > m_stat_info.size || offset < 0)
+    if (offset + length > m_stat_info->GetSize() || offset < 0)
     {
-      throw_io(env, strprintf("XrdMan::Read(off=%lld, len=%d) Request for data outside of file, file-size=%lld.",
-                             offset, length, m_stat_info.size));
+      throw_io(env, strprintf("XrdMan::Read(off=%lld, len=%d) Request for data outside of file, file-size=%llu.",
+                             offset, length, m_stat_info->GetSize()));
       return;
     }
 
@@ -277,7 +298,14 @@ public:
     while (length > 0)
     {
       int    bytes_available;
-      jbyte *cache   = get_cache(offset + position, bytes_available);
+
+      jbyte *cache   = get_cache(env, offset + position, bytes_available);
+      if (cache == 0)
+      {
+        // Exception set from get_cache().
+        return;
+      }
+
       int    to_copy = std::min(bytes_available, length);
 
       env->SetByteArrayRegion(arr, arr_offset, to_copy, cache);
