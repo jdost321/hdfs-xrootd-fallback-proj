@@ -9,8 +9,8 @@ CONF_DEFAULTS = {
   'CKSUM_DIR': '/cksums',
   'HDFS_TMP_DIR': '',
   'BLOCK_SIZE': 134217728,
+  # should probably genericize /var/log/ in Makefile
   'LOG_DIR': '/var/log/hdfs-xrootd-healer',
-  'LOG': '/var/log/hdfs-xrootd-healer/hdfs-xrootd-healer.log',
   'NUM_WORKERS': 1
 }
 
