@@ -1,3 +1,5 @@
+# need to update configure.ac before this works
+#CXX := @CXX@
 INSTALL := @INSTALL@
 
 vers := @PACKAGE_VERSION@
@@ -6,20 +8,38 @@ prefix := @prefix@
 exec_prefix := @exec_prefix@
 sbindir := @sbindir@
 sysconfdir := @sysconfdir@
+libdir := @libdir@
+libexecdir := @libexecdir@
 localstatedir := @localstatedir@
 datarootdir := @datarootdir@
 datadir := @datadir@
 
-all: src/hdfs-xrootd-healer config/hdfs-xrootd-healer.cfg
+# this should be passed as config variable eventually
+PYTHON_SITELIB :=  $(libdir)/python2.6
+
+all: hcopy src/hcopy.sh src/hdfs-xrootd-hworker src/hdfs-xrootd-healer config/hdfs-xrootd-healer.cfg
 
 clean:
-	rm -f src/hdfs-xrootd-healer config/*.cfg hdfs-xrootd-healer-$(vers).tar.gz
+	rm -f *.o hcopy src/hcopy.sh src/hdfs-xrootd-hworker src/hdfs-xrootd-healer config/*.cfg hdfs-xrootd-healer-$(vers).tar.gz
 
 distclean: clean
 	rm -f Makefile config.status config.log
 
+hcopy: hcopy.o md5.o
+	${CXX} -g $^ -o $@ -lhdfs
+
+%.o: src/%.cxx
+	${CXX} -g -O2 -c $< -o $@
+
+src/hcopy.sh: src/hcopy.sh.in 
+	sed -e 's|[@]libexecdir@|$(libexecdir)|' $< > $@
+
+src/hdfs-xrootd-hworker: src/hdfs-xrootd-hworker.in 
+	sed -e 's|[@]libexecdir@|$(libexecdir)|' $< > $@
+
 src/hdfs-xrootd-healer: src/hdfs-xrootd-healer.in 
 	sed -e 's|[@]sysconfdir@|$(sysconfdir)|' \
+	-e 's|[@]libexecdir@|$(libexecdir)|' \
 	-e 's|[@]localstatedir@|$(localstatedir)|' $< > $@
 
 config/hdfs-xrootd-healer.cfg: config/hdfs-xrootd-healer.cfg.in 
@@ -28,14 +48,22 @@ config/hdfs-xrootd-healer.cfg: config/hdfs-xrootd-healer.cfg.in
 install: all
 	mkdir -p $(DESTDIR)$(sbindir)
 	$(INSTALL) src/hdfs-xrootd-healer $(DESTDIR)$(sbindir)
+	mkdir -p $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
+	$(INSTALL) src/{hdfs-xrootd-hworker,hcopy.sh} hcopy $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
+	mkdir -p $(DESTDIR)$(PYTHON_SITELIB)/hxrd
+	$(INSTALL) -m 644 src/hxrd/{__init__.py,util.py} $(DESTDIR)$(PYTHON_SITELIB)/hxrd
 	mkdir -p $(DESTDIR)$(datadir)/hdfs-xrootd-healer
 	$(INSTALL) -m 644 config/hdfs-xrootd-healer.{cfg,cron,init,logrotate} \
 	$(DESTDIR)$(datadir)/hdfs-xrootd-healer
 	mkdir -p $(DESTDIR)$(localstatedir)/log/hdfs-xrootd-healer
+	mkdir -p $(DESTDIR)$(localstatedir)/lib/hdfs-xrootd-healer
 
 uninstall:
 	rm -rf $(DESTDIR)$(sbindir)/hdfs-xrootd-healer
+	rm -rf $(DESTDIR)$(libexecdir)/hdfs-xrootd-healer
+	rm -rf $(DESTDIR)$(PYTHON_SITELIB)/hxrd
 	rm -rf $(DESTDIR)$(datadir)/hdfs-xrootd-healer
+	rm -rf $(DESTDIR)$(localstatedir)/lib/hdfs-xrootd-healer
 
 dist:
 	rsync -avR autom4te.cache \

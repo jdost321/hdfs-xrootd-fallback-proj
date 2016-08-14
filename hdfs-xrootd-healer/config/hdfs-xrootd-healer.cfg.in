@@ -5,4 +5,5 @@ fuse_mount =
 block_size =
 hdfs_tmp_dir = /tmp
 cksum_dir = /cksums
-log = @localstatedir@/log/hdfs-xrootd-healer/hdfs-xrootd-healer.log
+log_dir = @localstatedir@/log/hdfs-xrootd-healer
+num_workers = 8
