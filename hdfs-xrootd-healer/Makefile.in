@@ -1,3 +1,5 @@
+# need to update configure.ac before this works
+#CXX := @CXX@
 INSTALL := @INSTALL@
 
 vers := @PACKAGE_VERSION@
@@ -6,20 +8,34 @@ prefix := @prefix@
 exec_prefix := @exec_prefix@
 sbindir := @sbindir@
 sysconfdir := @sysconfdir@
+libexecdir := @libexecdir@
 localstatedir := @localstatedir@
 datarootdir := @datarootdir@
 datadir := @datadir@
 
-all: src/hdfs-xrootd-healer config/hdfs-xrootd-healer.cfg
+all: hcopy src/hcopy.sh src/hdfs-xrootd-hworker src/hdfs-xrootd-healer config/hdfs-xrootd-healer.cfg
 
 clean:
-	rm -f src/hdfs-xrootd-healer config/*.cfg hdfs-xrootd-healer-$(vers).tar.gz
+	rm -f *.o hcopy src/hdfs-xrootd-healer src/hdfs-xrootd-hworker src/hdfs-xrootd-hcopy config/*.cfg hdfs-xrootd-healer-$(vers).tar.gz
 
 distclean: clean
 	rm -f Makefile config.status config.log
 
+hcopy: hcopy.o md5.o
+	${CXX} -g $^ -o $@ -lhdfs
+
+%.o: src/%.cxx
+	${CXX} -g -O2 -c $< -o $@
+
+src/hcopy.sh: src/hcopy.sh.in 
+	sed -e 's|[@]libexecdir@|$(libexecdir)|' $< > $@
+
+src/hdfs-xrootd-hworker: src/hdfs-xrootd-hworker.in 
+	sed -e 's|[@]libexecdir@|$(libexecdir)|' $< > $@
+
 src/hdfs-xrootd-healer: src/hdfs-xrootd-healer.in 
 	sed -e 's|[@]sysconfdir@|$(sysconfdir)|' \
+	-e 's|[@]libexecdir@|$(libexecdir)|' \
 	-e 's|[@]localstatedir@|$(localstatedir)|' $< > $@
 
 config/hdfs-xrootd-healer.cfg: config/hdfs-xrootd-healer.cfg.in 

@@ -14,46 +14,7 @@ except ImportError:
 import subprocess
 import time
 
-def log(level, msg):
-  if level <= LOG_LEVEL:
-    LOG_OUT.write("%s %s\n" % (time.strftime("%b %d %H:%M:%S", time.localtime()), msg))
-  
-def log_wkr(level, id, msg):
-  if level <= LOG_LEVEL:
-    LOG_OUT.write("%s [%i] %s\n" % (time.strftime("%b %d %H:%M:%S", time.localtime()), id, msg))
-  
-def parse_conf(path):
-  d = {
-    'NAMESPACE': '',
-    'LOGICAL_DIR': '',
-    'CACHE_DIR': '',
-    'FUSE_MOUNT': '',
-    'CKSUM_DIR': '/cksums',
-    'HDFS_TMP_DIR': '',
-    'BLOCK_SIZE': 134217728,
-    'LOG': '@localstatedir@/log/hdfs-xrootd-healer/hdfs-xrootd-healer.log',
-    'NUM_WORKERS': 1
-  }
-
-  line_num = 1
-  f = open(path)
-  try:
-    for line in f:
-      line = line.split('#')[0]
-      line_arr = line.split('=')
-      if len(line_arr) >= 2:
-        key = line_arr[0].strip()
-        if key.upper() not in d:
-          raise ValueError('%s: line %s: %s' % (path, line_num, key))
-        key = key.upper()
-        if key == 'BLOCK_SIZE' or key == 'NUM_WORKERS':
-          d[key] = int(line_arr[1].strip())
-        else:
-          d[key] = line_arr[1].strip()
-      line_num += 1
-  finally:
-    f.close()
-  return d
+import hxrd.util
 
 def build_cache_set(path, cached_files):
   if os.path.isdir(path):
@@ -84,221 +45,51 @@ def get_broken_files(path):
 
   return broken_files
 
-# alternative to fuse
-def get_cksum(path):
-  p = subprocess.Popen(['hadoop', 'fs', '-cat', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  res = p.communicate()
-  if p.returncode != 0:
-    # just spit out first error line of hadoop since its noisy
-    raise IOError(res[1].split()[0])
-
-  for line in res[0].split():
-    if line.startswith('MD5:'):
-      orig_md5 = line.split(':')[1].strip()
-
-  return orig_md5
-
-def md5_cp(src, dest, bufsize):
-  cmd = '/root/better-healer/hcopy.sh'
-  p = subprocess.Popen([cmd, src, dest, bufsize], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  res = p.communicate()
-  if p.returncode != 0:
-    #raise IOError("%s exited with code %i\n%s" % (cmd, p.returncode,res[1]))
-    raise IOError("%s exited with code %i" % (cmd, p.returncode))
-
-  return res[0].split()[-1]
-
-def repair_files(id, file_list):
-  repaired_files = 0
-  for f in file_list:
-    # be optimistic
-    repaired_files += 1
-
-    log_wkr(0, id, f)
-    '''orig_md5_path = '%s%s%s' % (CONF['FUSE_MOUNT'], CONF['CKSUM_DIR'], f)
-
-    fin = None
-    try:
-      try:
-        fin = open(orig_md5_path) 
-        for line in fin:
-          if line.startswith('MD5:'):
-            orig_md5 = line.split(':')[1].strip()
-
-      except IOError, e:
-        repaired_files -= 1
-        log_wkr(0, id, "ERROR: Unable to parse original checksum, skipping: %s" % f)
-        LOG_OUT.write("  %s\n" % e)
-        continue
-    finally:
-      if fin is not None:
-        fin.close()
-    '''
-
-    # alternative to fuse
-    orig_md5_path = '%s%s' % (CONF['CKSUM_DIR'], f)
-
-    try:
-      orig_md5 = get_cksum(orig_md5_path)
-    except IOError, e:
-      log_wkr(0, id, "ERROR: Unable to parse original checksum, skipping: %s" % f)
-      LOG_OUT.write("  %s\n" % e)
-      continue
-
-    #new_md5 = md5()
-
-    orig_fuse_filepath = '%s%s' % (CONF['FUSE_MOUNT'], f)
-    orig_filepath = f
-
-    f_base = "%s.%i" % (os.path.basename(f),id)
-    tmp_fuse_filepath = os.path.join('%s%s' % (CONF['FUSE_MOUNT'], CONF['HDFS_TMP_DIR']), f_base)
-    tmp_filepath = os.path.join(CONF['HDFS_TMP_DIR'], f_base)
-
-    '''fin = None
-    fout = None
-    try:
-      try:
-        fin = open(orig_filepath, 'rb')
-        fout = open(tmp_filepath, 'wb')
-        while True:
-          bytes = fin.read(CONF['BLOCK_SIZE'])
-          if bytes == '':
-            break
-          new_md5.update(bytes)
-          fout.write(bytes)
-      except IOError, e:
-        repaired_files -= 1
-        log_wkr(0, id, "ERROR: Error occurred repairing file, skipping: %s" % f)
-        LOG_OUT.write("  %s\n" % e)
-        if fout != None:
-          fout.close()
-          if os.path.isfile(tmp_filepath):
-            try:
-              os.unlink(tmp_filepath)
-            except OSError, e:
-              log_wkr(0, id, "WARN: Unable to remove file: %s" % tmp_filepath)
-              LOG_OUT.write("  %s\n" % e)
-        continue
-
-    finally:
-      if fin != None:
-        fin.close()
-      if fout != None:
-        fout.close()
-    '''
-
-    try: 
-      new_md5 = md5_cp(orig_filepath, tmp_filepath, str(CONF['BLOCK_SIZE']))
-    except IOError, e:
-      repaired_files -= 1
-      log_wkr(0, id, "ERROR: Error occurred repairing file, skipping: %s" % f)
-      LOG_OUT.write("  %s\n" % e)
-      if os.path.isfile(tmp_fuse_filepath):
-        try:
-          os.unlink(tmp_fuse_filepath)
-        except OSError, e:
-          log_wkr(0, id, "WARN: Unable to remove file: %s" % tmp_fuse_filepath)
-          LOG_OUT.write("  %s\n" % e)
-      continue
-
-    #if orig_md5 != new_md5.hexdigest():
-    if orig_md5 != new_md5:
-      log_wkr(0, id, "ERROR: Checksums don't match, skipping: %s" % f)
-      LOG_OUT.write("    original: %s\n" % orig_md5)
-      #LOG_OUT.write("  calculated: %s\n" % new_md5.hexdigest())
-      LOG_OUT.write("  calculated: %s\n" % new_md5)
-      try:
-        os.unlink(tmp_fuse_filepath)
-      except OSError, e:
-        log_wkr(0, id, "WARN: Unable to remove file: %s" % tmp_fuse_filepath)
-        LOG_OUT.write("  %s\n" % e)
-
-      repaired_files -= 1
-      continue
-
-    try:
-      orig_stat = os.stat(orig_fuse_filepath)
-
-      os.chown(tmp_fuse_filepath, orig_stat.st_uid, orig_stat.st_gid)
-      os.chmod(tmp_fuse_filepath, orig_stat.st_mode)
-    except OSError, e:
-      repaired_files -= 1
-      log_wkr(0, id, "ERROR: Unable to preserve meta info, skipping: %s" % f)
-      LOG_OUT.write("  %s\n" % e)
-      try:
-        os.unlink(tmp_fuse_filepath)
-      except OSError, e:
-        log_wkr(0, id, "WARN: Unable to remove file: %s" % tmp_fuse_filepath)
-        LOG_OUT.write("  %s\n" % e)
-      continue
-
-    if PRETEND:
-      try:
-        os.unlink(tmp_fuse_filepath)
-      except OSError:
-        pass
-    else:
-      try:
-        os.rename(orig_fuse_filepath, "%s.bak" % orig_fuse_filepath)
-        os.rename(tmp_fuse_filepath, orig_fuse_filepath)
-      except OSError, e:
-        repaired_files -= 1
-        log_wkr(0, id, "ERROR: Failed to replace repaired file: %s" % f)
-        LOG_OUT.write("  %s\n" % e)
-        continue
-
-      try:
-        os.unlink("%s.bak" % orig_fuse_filepath)
-      except OSError, e:
-        log_wkr(0, id, "WARN: Unable to remove file: %s.bak" % orig_fuse_filepath)
-        LOG_OUT.write("  %s\n" % e)
-
-  return repaired_files
-
 LOG_LEVEL = 0
 LOG_OUT = sys.stdout
 CONF_PATH = '@sysconfdir@/hdfs-xrootd-healer/hdfs-xrootd-healer.cfg'
-CONF = parse_conf(CONF_PATH)
+STATE_DIR = '@localstatedir@/lib/hdfs-xrootd-healer'
+LIBEXEC_DIR = '@libexecdir@/hdfs-xrootd-healer'
+CONF = hxrd.util.parse_conf(CONF_PATH)
 PRETEND = False
-DEBUG = False
+#DEBUG = False
 
 if __name__ == '__main__':
   for a in sys.argv[1:]:
     if a == '-pretend':
       PRETEND = True
-    elif a == '-debug':
-      DEBUG = True
+    #elif a == '-debug':
+    #  DEBUG = True
     else:
       CONF['NAMESPACE'] = a
 
-  if not DEBUG:
-    LOG_OUT = open(CONF['LOG'], 'a', 1)
+  log = hxrd.util.Logger(os.path.join(CONF['LOG_DIR'], "hdfs-xrootd-healer.log"))
 
   broken_files_tot = 0
   repairable_files_tot = 0
   repaired_files_tot = 0
 
   for ns_path in CONF['NAMESPACE'].split(','):
-    log(0, "Processing namespace: %s" % ns_path)
+    log.log(0, "Processing namespace: %s" % ns_path)
 
-    log(0, "Searching namespace for corrupt files")
+    log.log(0, "Searching namespace for corrupt files")
     broken_files = get_broken_files(ns_path)
 
     if len(broken_files) == 0:
-      log(0, "No corrupt files found")
+      log.log(0, "No corrupt files found")
       continue
 
     broken_files_tot += len(broken_files)
-    log(0, "Corrupt Files: %s" % len(broken_files))
+    log.log(0, "Corrupt Files: %s" % len(broken_files))
 
-    log(0, "Generating list of cached files")
+    log.log(0, "Generating list of cached files")
     cached_files = set()
     build_cache_set(ns_path.replace(CONF['LOGICAL_DIR'], CONF['CACHE_DIR'], 1), cached_files)
     if len(cached_files) == 0:
-      log(0, "No cached files found")
+      log.log(0, "No cached files found")
       continue
 
-    log(0, "Cached Files: %s" % len(cached_files))
+    log.log(0, "Cached Files: %s" % len(cached_files))
 
     repairable_files = 0
     repaired_files = 0
@@ -310,75 +101,51 @@ if __name__ == '__main__':
         file_bins[repairable_files % len(file_bins)].append(f)
         repairable_files += 1
 
-    log(0, "Repairable Files: %s" % repairable_files)
-
-    log(0, "Begin repairing files")
-
-    # to receive data from children
-    pipe_fds = []
+    # write file_list files for worker processes
     for i in range(len(file_bins)):
-      pipe_fds.append(os.pipe())
+      fout = open(os.path.join(STATE_DIR, "file_list.%i.txt" % i), 'w')
 
+      for f in file_bins[i]:
+        fout.write("%s\n" % f)
+
+      fout.close()
+
+    log.log(0, "Repairable Files: %s" % repairable_files)
+
+    log.log(0, "Begin repairing files")
+
+    streams = []
+    proc_map = {}
     for i in range(len(file_bins)):
-      pid = os.fork()
-      # i'm the child
-      if pid == 0:
-        # close pipes i'm not using
-        for j in range(len(pipe_fds)):
-          if j == i:
-            continue
+      args = ['%s/hdfs-xrootd-hworker' % LIBEXEC_DIR]
+      if PRETEND:
+        args.append('-pretend')
+      args += [str(i), CONF_PATH, os.path.join(STATE_DIR, "file_list.%i.txt" % i)]
 
-          os.close(pipe_fds[j][0])
-          os.close(pipe_fds[j][1])
+      p = subprocess.Popen(args, stdout=subprocess.PIPE)
+      proc_map[p.stdout] = p
+      streams.append(p.stdout)
 
-        # close reading end and create write stream
-        os.close(pipe_fds[i][0])
-        fout = os.fdopen(pipe_fds[i][1], 'w')
-
-        repaired_files = repair_files(i, file_bins[i])
-        fout.write("%i\n" % repaired_files)
-
-        fout.close()
-        sys.exit(0)
-
-    # i'm the parent
-
-    # set up child streams
-    child_streams = []
-    for fds in pipe_fds:
-      # close write ends
-      os.close(fds[1])
-      child_streams.append(os.fdopen(fds[0], 'r'))
-
-    # read data as it comes in
     while True:
-      ready_streams = select.select(child_streams,(),())
-      to_close = []
-
+      ready_streams = select.select(streams,(),())
       for fin in ready_streams[0]:
         line = fin.readline()
         if line == '':
-          to_close.append(fin)
           # if stream closed child is about to exit
-          os.wait()
+          proc_map[fin].wait()
+          streams.remove(fin)
         else:
           repaired_files += int(line)
 
-      # close out streams that are finished
-      for fin in to_close:
-        fin.close()
-        child_streams.remove(fin)
-      # we're done when no more streams are left
-      if len(child_streams) == 0:
+      if len(streams) == 0:
         break
 
     repairable_files_tot += repairable_files
     repaired_files_tot += repaired_files
-    log(0, "Repaired Files: %s" % repaired_files)
+    log.log(0, "Repaired Files: %s" % repaired_files)
 
-  log(0, "Total Corrupt Files: %s" % broken_files_tot)
-  log(0, "Total Repairable Files: %s" % repairable_files_tot)
-  log(0, "Total Repaired Files: %s" % repaired_files_tot)
+  log.log(0, "Total Corrupt Files: %s" % broken_files_tot)
+  log.log(0, "Total Repairable Files: %s" % repairable_files_tot)
+  log.log(0, "Total Repaired Files: %s" % repaired_files_tot)
 
-  if not DEBUG:
-    LOG_OUT.close()
+  log.close()
