@@ -20,7 +20,7 @@ PYTHON_SITELIB :=  $(libdir)/python2.6
 all: hcopy src/hcopy.sh src/hdfs-xrootd-hworker src/hdfs-xrootd-healer config/hdfs-xrootd-healer.cfg
 
 clean:
-	rm -f *.o hcopy src/hdfs-xrootd-healer src/hdfs-xrootd-hworker src/hdfs-xrootd-hcopy config/*.cfg hdfs-xrootd-healer-$(vers).tar.gz
+	rm -f *.o hcopy src/hcopy.sh src/hdfs-xrootd-hworker src/hdfs-xrootd-healer config/*.cfg hdfs-xrootd-healer-$(vers).tar.gz
 
 distclean: clean
 	rm -f Makefile config.status config.log
