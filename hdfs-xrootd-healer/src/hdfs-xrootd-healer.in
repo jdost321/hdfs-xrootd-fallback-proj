@@ -66,18 +66,20 @@ if __name__ == '__main__':
 
   log = hxrd.util.Logger(os.path.join(CONF['LOG_DIR'], "hdfs-xrootd-healer.log"))
 
-  broken_files_tot = 0
-  repairable_files_tot = 0
-  repaired_files_tot = 0
-
-  stat_dict = {
-    'totals': {
-      'broken_files': 0,
-      'repairable_files': 0,
-      'repaired_files': 0
-    },
-    'failed': {}
-  }
+  stats_file = os.path.join(STATE_DIR, 'stats.json')
+  if os.path.exists(stats_file):
+    fin = open(stats_file)
+    stats_dict = json.load(fin)
+    fin.close()
+  else:
+    stats_dict = {
+      'totals': {
+        'broken_files': 0,
+        'repairable_files': 0,
+        'repaired_files': 0
+      },
+      'failed': {}
+    }
 
   for ns_path in CONF['NAMESPACE'].split(','):
     log.log(0, "Processing namespace: %s" % ns_path)
@@ -89,7 +91,7 @@ if __name__ == '__main__':
       log.log(0, "No corrupt files found")
       continue
 
-    stat_dict['totals']['broken_files'] += len(broken_files)
+    stats_dict['totals']['broken_files'] += len(broken_files)
     log.log(0, "Corrupt Files: %s" % len(broken_files))
 
     log.log(0, "Generating list of cached files")
@@ -158,26 +160,28 @@ if __name__ == '__main__':
         repaired_files += child_stats['repaired_files']
 
         for f in child_stats['failed']:
-          if f not in stat_dict['failed']:
-            stat_dict['failed'][f] = {'freq': 0}
+          if f not in stats_dict['failed']:
+            stats_dict['failed'][f] = {'freq': 0}
 
-          stat_dict['failed'][f]['freq'] += 1
-          stat_dict['failed'][f]['last_err_type'] = child_stats['failed'][f]['last_err_type']
-          stat_dict['failed'][f]['last_worker'] = proc[1]
+          stats_dict['failed'][f]['freq'] += 1
+          stats_dict['failed'][f]['last_err_type'] = child_stats['failed'][f]['last_err_type']
+          stats_dict['failed'][f]['last_worker'] = proc[1]
 
       if len(streams) == 0:
         break
 
-    stat_dict['totals']['repairable_files'] += repairable_files
-    stat_dict['totals']['repaired_files'] += repaired_files
+    stats_dict['totals']['repairable_files'] += repairable_files
+    stats_dict['totals']['repaired_files'] += repaired_files
     log.log(0, "Repaired Files: %s" % repaired_files)
 
-  fout = open(os.path.join(STATE_DIR, 'stats.json'), 'w')
-  json.dump(stat_dict, fout)
+  stats_tmpfile = "%s.tmp" % stats_file
+  fout = open(stats_tmpfile, 'w')
+  json.dump(stats_dict, fout)
   fout.close()
+  os.rename(stats_tmpfile, stats_file)
 
-  log.log(0, "Total Corrupt Files: %s" % stat_dict['totals']['broken_files'])
-  log.log(0, "Total Repairable Files: %s" % stat_dict['totals']['repairable_files'])
-  log.log(0, "Total Repaired Files: %s" % stat_dict['totals']['repaired_files'])
+  log.log(0, "Total Corrupt Files: %s" % stats_dict['totals']['broken_files'])
+  log.log(0, "Total Repairable Files: %s" % stats_dict['totals']['repairable_files'])
+  log.log(0, "Total Repaired Files: %s" % stats_dict['totals']['repaired_files'])
 
   log.close()
