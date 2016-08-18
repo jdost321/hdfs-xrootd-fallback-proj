@@ -4,6 +4,7 @@ import sys
 import os
 import subprocess
 import select
+import json
 
 import hxrd.util
 
@@ -84,11 +85,11 @@ if __name__ == '__main__':
 
   log.log(0, "Repairable Files: %i" % len(file_list))
 
-  repaired_files = 0
+  stat_dict = {'repaired_files': 0, 'failed':{}}
 
   for f in file_list:
     # be optimistic
-    repaired_files += 1
+    stat_dict['repaired_files'] += 1
 
     log.log(0, f)
 
@@ -97,6 +98,8 @@ if __name__ == '__main__':
     try:
       orig_md5 = get_cksum(orig_md5_path)
     except IOError, e:
+      stat_dict['repaired_files'] -= 1
+      stat_dict['failed'][f] = {'last_err_type': 'checksum'}
       log.log(0, "ERROR: Unable to parse original checksum, skipping: %s" % f)
       log.write(0, "  %s\n" % e)
       continue
@@ -111,7 +114,8 @@ if __name__ == '__main__':
     try: 
       new_md5 = md5_cp(orig_filepath, tmp_filepath, str(CONF['BLOCK_SIZE']))
     except IOError, e:
-      repaired_files -= 1
+      stat_dict['repaired_files'] -= 1
+      stat_dict['failed'][f] = {'last_err_type': 'hcopy'}
       log.log(0, "ERROR: Error occurred repairing file, skipping: %s" % f)
       log.write(0, "  %s\n" % e)
       if os.path.isfile(tmp_fuse_filepath):
@@ -132,7 +136,8 @@ if __name__ == '__main__':
         log.log(0, "WARN: Unable to remove file: %s" % tmp_fuse_filepath)
         log.write(0, "  %s\n" % e)
 
-      repaired_files -= 1
+      stat_dict['repaired_files'] -= 1
+      stat_dict['failed'][f] = {'last_err_type': 'checksum'}
       continue
 
     try:
@@ -141,7 +146,8 @@ if __name__ == '__main__':
       os.chown(tmp_fuse_filepath, orig_stat.st_uid, orig_stat.st_gid)
       os.chmod(tmp_fuse_filepath, orig_stat.st_mode)
     except OSError, e:
-      repaired_files -= 1
+      stat_dict['repaired_files'] -= 1
+      stat_dict['failed'][f] = {'last_err_type': 'metadata'}
       log.log(0, "ERROR: Unable to preserve meta info, skipping: %s" % f)
       log.write(0, "  %s\n" % e)
       try:
@@ -161,7 +167,8 @@ if __name__ == '__main__':
         os.rename(orig_fuse_filepath, "%s.bak" % orig_fuse_filepath)
         os.rename(tmp_fuse_filepath, orig_fuse_filepath)
       except OSError, e:
-        repaired_files -= 1
+        stat_dict['repaired_files'] -= 1
+        stat_dict['failed'][f] = {'last_err_type': 'mv'}
         log.log(0, "ERROR: Failed to replace repaired file: %s" % f)
         log.write(0, "  %s\n" % e)
         continue
@@ -172,8 +179,8 @@ if __name__ == '__main__':
         log.log(0, "WARN: Unable to remove file: %s.bak" % orig_fuse_filepath)
         log.write(0, "  %s\n" % e)
 
-  print repaired_files
+  json.dump(stat_dict, sys.stdout)
 
-  log.log(0, "Repaired Files: %i" % repaired_files)
+  log.log(0, "Repaired Files: %i" % stat_dict['repaired_files'])
 
   log.close()

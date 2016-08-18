@@ -4,6 +4,7 @@ import sys
 import os
 import re
 import select
+import json
 
 # md5 fallback if python <= 2.4
 try:
@@ -69,6 +70,15 @@ if __name__ == '__main__':
   repairable_files_tot = 0
   repaired_files_tot = 0
 
+  stat_dict = {
+    'totals': {
+      'broken_files': 0,
+      'repairable_files': 0,
+      'repaired_files': 0
+    },
+    'failed': {}
+  }
+
   for ns_path in CONF['NAMESPACE'].split(','):
     log.log(0, "Processing namespace: %s" % ns_path)
 
@@ -79,7 +89,7 @@ if __name__ == '__main__':
       log.log(0, "No corrupt files found")
       continue
 
-    broken_files_tot += len(broken_files)
+    stat_dict['totals']['broken_files'] += len(broken_files)
     log.log(0, "Corrupt Files: %s" % len(broken_files))
 
     log.log(0, "Generating list of cached files")
@@ -123,29 +133,51 @@ if __name__ == '__main__':
       args += [str(i), CONF_PATH, os.path.join(STATE_DIR, "file_list.%i.txt" % i)]
 
       p = subprocess.Popen(args, stdout=subprocess.PIPE)
-      proc_map[p.stdout] = p
+
+      # given a stream, remember the process object and its assigned id
+      proc_map[p.stdout] = (p, i)
       streams.append(p.stdout)
 
     while True:
       ready_streams = select.select(streams,(),())
       for fin in ready_streams[0]:
-        line = fin.readline()
+        '''line = fin.readline()
         if line == '':
           # if stream closed child is about to exit
           proc_map[fin].wait()
           streams.remove(fin)
         else:
           repaired_files += int(line)
+        '''
+
+        proc = proc_map[fin]
+        child_stats = json.load(fin)
+        proc[0].wait()
+        streams.remove(fin)
+
+        repaired_files += child_stats['repaired_files']
+
+        for f in child_stats['failed']:
+          if f not in stat_dict['failed']:
+            stat_dict['failed'][f] = {'freq': 0}
+
+          stat_dict['failed'][f]['freq'] += 1
+          stat_dict['failed'][f]['last_err_type'] = child_stats['failed'][f]['last_err_type']
+          stat_dict['failed'][f]['last_worker'] = proc[1]
 
       if len(streams) == 0:
         break
 
-    repairable_files_tot += repairable_files
-    repaired_files_tot += repaired_files
+    stat_dict['totals']['repairable_files'] += repairable_files
+    stat_dict['totals']['repaired_files'] += repaired_files
     log.log(0, "Repaired Files: %s" % repaired_files)
 
-  log.log(0, "Total Corrupt Files: %s" % broken_files_tot)
-  log.log(0, "Total Repairable Files: %s" % repairable_files_tot)
-  log.log(0, "Total Repaired Files: %s" % repaired_files_tot)
+  fout = open(os.path.join(STATE_DIR, 'stats.json'), 'w')
+  json.dump(stat_dict, fout)
+  fout.close()
+
+  log.log(0, "Total Corrupt Files: %s" % stat_dict['totals']['broken_files'])
+  log.log(0, "Total Repairable Files: %s" % stat_dict['totals']['repairable_files'])
+  log.log(0, "Total Repaired Files: %s" % stat_dict['totals']['repaired_files'])
 
   log.close()
