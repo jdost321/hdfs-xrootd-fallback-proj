@@ -67,19 +67,22 @@ if __name__ == '__main__':
   log = hxrd.util.Logger(os.path.join(CONF['LOG_DIR'], "hdfs-xrootd-healer.log"))
 
   stats_file = os.path.join(STATE_DIR, 'stats.json')
+
+  stats_dict_prev = None
+
   if os.path.exists(stats_file):
     fin = open(stats_file)
-    stats_dict = json.load(fin)
+    stats_dict_prev = json.load(fin)
     fin.close()
-  else:
-    stats_dict = {
-      'totals': {
-        'broken_files': 0,
-        'repairable_files': 0,
-        'repaired_files': 0
-      },
-      'failed': {}
-    }
+
+  stats_dict = {
+    'totals': {
+      'broken_files': 0,
+      'repairable_files': 0,
+      'repaired_files': 0
+    },
+    'failed': {}
+  }
 
   for ns_path in CONF['NAMESPACE'].split(','):
     log.log(0, "Processing namespace: %s" % ns_path)
@@ -160,7 +163,9 @@ if __name__ == '__main__':
         repaired_files += child_stats['repaired_files']
 
         for f in child_stats['failed']:
-          if f not in stats_dict['failed']:
+          if stats_dict_prev is not None and f in stats_dict_prev['failed']:
+            stats_dict['failed'][f] = {'freq': stats_dict_prev['failed'][f]['freq']}
+          else:
             stats_dict['failed'][f] = {'freq': 0}
 
           stats_dict['failed'][f]['freq'] += 1
