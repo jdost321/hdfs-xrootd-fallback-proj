@@ -163,10 +163,11 @@ if __name__ == '__main__':
         repaired_files += child_stats['repaired_files']
 
         for f in child_stats['failed']:
-          if stats_dict_prev is not None and f in stats_dict_prev['failed']:
-            stats_dict['failed'][f] = {'freq': stats_dict_prev['failed'][f]['freq']}
-          else:
-            stats_dict['failed'][f] = {'freq': 0}
+          if f not in stats_dict['failed']:
+            if stats_dict_prev is not None and f in stats_dict_prev['failed']:
+              stats_dict['failed'][f] = {'freq': stats_dict_prev['failed'][f]['freq']}
+            else:
+              stats_dict['failed'][f] = {'freq': 0}
 
           stats_dict['failed'][f]['freq'] += 1
           stats_dict['failed'][f]['last_err_type'] = child_stats['failed'][f]['last_err_type']
